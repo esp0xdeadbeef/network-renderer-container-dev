@@ -16,6 +16,7 @@ let
     "a-lab"
     "a-obs"
     "b-corp"
+    "b-client"
     "ovl"
   ];
 
@@ -66,7 +67,11 @@ in
     containerlab
     iproute2
     jq
+    gron
+    tmux
     neovim
+    tcpdump
+    traceroute
     nftables
   ];
 
@@ -76,4 +81,6 @@ in
 
   virtualisation.memorySize = 1024 * 24;
   virtualisation.cores = 22;
+  environment.etc.hosts.enable = false;
+  services.openssh.enable = true;
 }

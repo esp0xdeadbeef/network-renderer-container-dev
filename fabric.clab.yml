@@ -1,203 +1,81 @@
-# fabric.clab.yml
 name: fabric
 
 topology:
   defaults:
     kind: linux
-    image: ghcr.io/hellt/network-multitool
+    image: frrouting/frr:latest
+    sysctls:
+      net.ipv4.ip_forward: "1"
+      net.ipv6.conf.all.forwarding: "1"
 
   nodes:
-
-    # --- Pre-created host bridges (realization-only; excluded from semantics) ---
-    a-ctl:
-      kind: linux
-      network-mode: none
-      labels: { semantic.ignore: "true" }
-    a-svc:
-      kind: linux
-      network-mode: none
-      labels: { semantic.ignore: "true" }
     a-end:
-      kind: linux
-      network-mode: none
-      labels: { semantic.ignore: "true" }
-    a-corp:
-      kind: linux
-      network-mode: none
-      labels: { semantic.ignore: "true" }
-    a-iot:
-      kind: linux
-      network-mode: none
-      labels: { semantic.ignore: "true" }
-    a-dmz:
-      kind: linux
-      network-mode: none
-      labels: { semantic.ignore: "true" }
-    a-lab:
-      kind: linux
-      network-mode: none
-      labels: { semantic.ignore: "true" }
-    a-obs:
-      kind: linux
-      network-mode: none
-      labels: { semantic.ignore: "true" }
-    b-corp:
-      kind: linux
-      network-mode: none
-      labels: { semantic.ignore: "true" }
-    ovl:
-      kind: linux
-      network-mode: none
-      labels: { semantic.ignore: "true" }
+      kind: bridge
 
-    # --- WAN ---
-    isp:
-      labels:
-        role: uplink
-        site: wan
+    saacc:
+      network-mode: none
+      binds:
+        - ./configs/saacc/daemons:/etc/frr/daemons:ro
+        - ./configs/saacc/frr.conf:/etc/frr/frr.conf:ro
+        - ./configs/saacc/vtysh.conf:/etc/frr/vtysh.conf:ro
+      exec:
+        - ip link set eth1 up
+        - ip link set eth2 up
+        - ip addr replace 10.10.0.0/31 dev eth2
+        - ip -6 addr replace fd42:dead:beef:1000::0/127 dev eth2
+        - ip -6 addr replace fd42:dead:beef:20::1/64 dev eth1
 
-    # --- SITE A ---
     sapol:
-      labels:
-        role: policy
-        site: a
+      network-mode: none
+      binds:
+        - ./configs/sapol/daemons:/etc/frr/daemons:ro
+        - ./configs/sapol/frr.conf:/etc/frr/frr.conf:ro
+        - ./configs/sapol/vtysh.conf:/etc/frr/vtysh.conf:ro
+      exec:
+        - ip link set eth1 up
+        - ip link set eth2 up
+        - ip addr replace 10.10.0.1/31 dev eth1
+        - ip -6 addr replace fd42:dead:beef:1000::1/127 dev eth1
+        - ip addr replace 10.10.0.2/31 dev eth2
+        - ip -6 addr replace fd42:dead:beef:1001::0/127 dev eth2
+
     sacore:
-      labels:
-        role: core
-        site: a
+      network-mode: none
+      binds:
+        - ./configs/sacore/daemons:/etc/frr/daemons:ro
+        - ./configs/sacore/frr.conf:/etc/frr/frr.conf:ro
+        - ./configs/sacore/vtysh.conf:/etc/frr/vtysh.conf:ro
+      exec:
+        - ip link set eth1 up
+        - ip link set eth2 up
+        - ip addr replace 10.10.0.3/31 dev eth1
+        - ip -6 addr replace fd42:dead:beef:1001::1/127 dev eth1
+        - ip addr replace 203.0.113.1/31 dev eth2
+        - ip -6 addr replace 2001:db8:0:1::1/127 dev eth2
 
-    sactl:
-      labels:
-        role: access
-        site: a
-    sasvc:
-      labels:
-        role: access
-        site: a
-    saend:
-      labels:
-        role: access
-        site: a
-    sacorp:
-      labels:
-        role: access
-        site: a
-    saiot:
-      labels:
-        role: access
-        site: a
-    sadmz:
-      labels:
-        role: access
-        site: a
-    salab:
-      labels:
-        role: access
-        site: a
-    saobs:
-      labels:
-        role: access
-        site: a
+    isp:
+      network-mode: none
+      binds:
+        - ./configs/isp/daemons:/etc/frr/daemons:ro
+        - ./configs/isp/vtysh.conf:/etc/frr/vtysh.conf:ro
+      exec:
+        - ip link set eth1 up
+        - ip addr replace 203.0.113.0/31 dev eth1
+        - ip -6 addr replace 2001:db8:0:1::0/127 dev eth1
+        - ip route replace 10.20.0.0/16 via 203.0.113.1
+        - ip -6 route replace fd42:dead:beef::/48 via 2001:db8:0:1::1
 
-    # --- SITE B ---
-    sbpol:
-      labels:
-        role: policy
-        site: b
-    sbcore:
-      labels:
-        role: core
-        site: b
-    sbcorp:
-      labels:
-        role: access
-        site: b
-
-    # --- Overlay participants ---
-    lap:
-      labels:
-        role: overlay
-        site: ext
-    vnl:
-      labels:
-        role: overlay
-        site: ext
-    vus:
-      labels:
-        role: overlay
-        site: ext
+    c1:
+      exec:
+        - ip link set eth1 up
+        - ip addr replace 10.20.20.133/24 dev eth1
+        - ip -6 addr replace fd42:dead:beef:20::1337/64 dev eth1
+        - ip route replace default via 10.20.20.1
+        - ip -6 route replace default via fd42:dead:beef:20::1
 
   links:
-
-  # ================= SITE A PLANES (realization-only; excluded from semantics) =================
-  - endpoints: ["sactl:eth1", "a-ctl:eth1"]
-    labels: { semantic.ignore: "true" }
-  - endpoints: ["sasvc:eth1", "a-svc:eth1"]
-    labels: { semantic.ignore: "true" }
-  - endpoints: ["saend:eth1", "a-end:eth1"]
-    labels: { semantic.ignore: "true" }
-  - endpoints: ["sacorp:eth1", "a-corp:eth1"]
-    labels: { semantic.ignore: "true" }
-  - endpoints: ["saiot:eth1", "a-iot:eth1"]
-    labels: { semantic.ignore: "true" }
-  - endpoints: ["sadmz:eth1", "a-dmz:eth1"]
-    labels: { semantic.ignore: "true" }
-  - endpoints: ["salab:eth1", "a-lab:eth1"]
-    labels: { semantic.ignore: "true" }
-  - endpoints: ["saobs:eth1", "a-obs:eth1"]
-    labels: { semantic.ignore: "true" }
-
-  # Access → Policy (tenant-access)
-  - endpoints: ["sactl:eth2", "sapol:eth1"]
-    labels: { edge.class: "tenant-access" }
-  - endpoints: ["sasvc:eth2", "sapol:eth2"]
-    labels: { edge.class: "tenant-access" }
-  - endpoints: ["saend:eth2", "sapol:eth3"]
-    labels: { edge.class: "tenant-access" }
-  - endpoints: ["sacorp:eth2", "sapol:eth4"]
-    labels: { edge.class: "tenant-access" }
-  - endpoints: ["saiot:eth2", "sapol:eth5"]
-    labels: { edge.class: "tenant-access" }
-  - endpoints: ["sadmz:eth2", "sapol:eth6"]
-    labels: { edge.class: "tenant-access" }
-  - endpoints: ["salab:eth2", "sapol:eth7"]
-    labels: { edge.class: "tenant-access" }
-  - endpoints: ["saobs:eth2", "sapol:eth8"]
-    labels: { edge.class: "tenant-access" }
-
-  # Policy → Core (policy-core)
-  - endpoints: ["sapol:eth20", "sacore:eth1"]
-    labels: { edge.class: "policy-core" }
-
-  # Core → ISP (upstream)
-  - endpoints: ["sacore:eth30", "isp:eth1"]
-    labels: { edge.class: "upstream" }
-
-  # ================= SITE B =================
-  - endpoints: ["sbcorp:eth1", "b-corp:eth1"]
-    labels: { semantic.ignore: "true" }
-  - endpoints: ["sbcorp:eth2", "sbpol:eth1"]
-    labels: { edge.class: "tenant-access" }
-  - endpoints: ["sbpol:eth20", "sbcore:eth1"]
-    labels: { edge.class: "policy-core" }
-  - endpoints: ["sbcore:eth30", "isp:eth2"]
-    labels: { edge.class: "upstream" }
-
-  # ================= OVERLAY =================
-  - endpoints: ["sapol:eth90", "ovl:eth1"]
-    labels: { edge.class: "overlay", semantic.ignore: "true" }
-  - endpoints: ["sbpol:eth90", "ovl:eth2"]
-    labels: { edge.class: "overlay", semantic.ignore: "true" }
-  - endpoints: ["lap:eth1", "ovl:eth3"]
-    labels: { edge.class: "overlay", semantic.ignore: "true" }
-  - endpoints: ["vnl:eth1", "ovl:eth4"]
-    labels: { edge.class: "overlay", semantic.ignore: "true" }
-  - endpoints: ["vus:eth1", "ovl:eth5"]
-    labels: { edge.class: "overlay", semantic.ignore: "true" }
-
-  # VPN exits → ISP (upstream)
-  - endpoints: ["vnl:eth2", "isp:eth10"]
-    labels: { edge.class: "upstream" }
-  - endpoints: ["vus:eth2", "isp:eth11"]
-    labels: { edge.class: "upstream" }
-
+    - endpoints: ["saacc:eth1", "a-end:port1"]
+    - endpoints: ["c1:eth1", "a-end:port2"]
+    - endpoints: ["saacc:eth2", "sapol:eth1"]
+    - endpoints: ["sapol:eth2", "sacore:eth1"]
+    - endpoints: ["sacore:eth2", "isp:eth1"]
