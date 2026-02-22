@@ -1,0 +1,101 @@
+{
+  "siteName": "esp0xdeadbeef.site-a",
+  "ulaPrefix": "fd42:dead:beef",
+  "tenantV4Base": "10.20",
+  "nodes": {
+    "s-router-access": {
+      "role": "access",
+      "owned": {
+        "tenants": [
+          { "name": "clients", "ipv6": "fd42:dead:beef:20::/64", "ipv4": "10.20.20.0/24" }
+        ]
+      },
+      "routing": {
+        "routerId": "10.255.20.1",
+        "asn": 64520,
+        "peers": [
+          { "node": "s-router-policy", "af": ["ipv6","ipv4"], "type": "ibgp" }
+        ],
+        "announce": {
+          "ipv6": ["fd42:dead:beef:20::/64"],
+          "ipv4": ["10.20.20.0/24"]
+        },
+        "accept": {
+          "ipv6": ["::/0", "fd42:dead:beef::/48"],
+          "ipv4": ["0.0.0.0/0", "10.20.0.0/16"]
+        }
+      }
+    },
+
+    "s-router-policy": {
+      "role": "policy",
+      "routing": {
+        "routerId": "10.255.0.2",
+        "asn": 64512,
+        "peers": [
+          { "node": "s-router-access", "af": ["ipv6","ipv4"], "type": "ibgp" },
+          { "node": "s-router-upstream-selector", "af": ["ipv6","ipv4"], "type": "ibgp" }
+        ],
+        "announce": { "ipv6": [], "ipv4": [] },
+        "accept": {
+          "ipv6": ["fd42:dead:beef::/48", "::/0"],
+          "ipv4": ["10.20.0.0/16", "0.0.0.0/0"]
+        },
+        "policy": {
+          "exportFilters": {
+            "toUpstream": {
+              "ipv6": ["fd42:dead:beef::/48"],
+              "ipv4": ["10.20.0.0/16"]
+            }
+          }
+        }
+      }
+    },
+
+    "s-router-upstream-selector": {
+      "role": "upstream-selector",
+      "routing": {
+        "routerId": "10.255.0.3",
+        "asn": 64512,
+        "peers": [
+          { "node": "s-router-policy", "af": ["ipv6","ipv4"], "type": "ibgp" }
+        ],
+        "announce": {
+          "ipv6": ["::/0"],
+          "ipv4": ["0.0.0.0/0"]
+        },
+        "accept": {
+          "ipv6": ["fd42:dead:beef::/48"],
+          "ipv4": ["10.20.0.0/16"]
+        },
+        "defaultOriginate": { "ipv6": true, "ipv4": true }
+      }
+    }
+  },
+
+  "links": {
+    "p2p-access-policy": {
+      "kind": "p2p",
+      "endpoints": {
+        "s-router-access": { "addr6": "fd42:dead:beef:1000::0/127", "addr4": "10.10.0.0/31" },
+        "s-router-policy": { "addr6": "fd42:dead:beef:1000::1/127", "addr4": "10.10.0.1/31" }
+      }
+    },
+    "p2p-policy-upstream": {
+      "kind": "p2p",
+      "endpoints": {
+        "s-router-policy": { "addr6": "fd42:dead:beef:1000::2/127", "addr4": "10.10.0.2/31" },
+        "s-router-upstream-selector": { "addr6": "fd42:dead:beef:1000::3/127", "addr4": "10.10.0.3/31" }
+      }
+    }
+  },
+
+  "testClients": [
+    {
+      "name": "c1",
+      "lan": "clients",
+      "ipv6": "2001:db8:dead:beef::1337/64",
+      "gw6": "fd42:dead:beef:20::1"
+    }
+  ]
+}
