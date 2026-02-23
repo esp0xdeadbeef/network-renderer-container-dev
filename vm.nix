@@ -83,4 +83,7 @@ in
   virtualisation.cores = 22;
   environment.etc.hosts.enable = false;
   services.openssh.enable = true;
+  nixos-shell.mounts = {
+    cache = "none";
+  };
 }
