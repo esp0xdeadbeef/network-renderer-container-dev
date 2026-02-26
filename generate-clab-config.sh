@@ -10,9 +10,9 @@ if [ ! -f "$SOLVER_JSON" ]; then
   exit 1
 fi
 
-# -----------------------------
-# jq helpers
-# -----------------------------
+strip_cidr() {
+  echo "$1" | cut -d/ -f1
+}
 
 jq_req() {
   local query="$1"
@@ -20,107 +20,61 @@ jq_req() {
   local val
   val="$(jq -er "$query" "$SOLVER_JSON" 2>/dev/null || true)"
   if [ -z "${val:-}" ] || [ "$val" = "null" ]; then
-    echo "ERROR: Missing $desc in solver JSON ($query)" >&2
+    echo "ERROR: Missing required solver field: $desc ($query)" >&2
     exit 1
   fi
   printf '%s\n' "$val"
 }
 
-jq_opt() {
-  local query="$1"
-  local desc="$2"
-  local val
-  val="$(jq -er "$query" "$SOLVER_JSON" 2>/dev/null || true)"
-  if [ -z "${val:-}" ] || [ "$val" = "null" ]; then
-    echo "WARNING: Missing $desc in solver JSON ($query)" >&2
-    printf '%s\n' ""
-    return 0
-  fi
-  printf '%s\n' "$val"
-}
-
 indent_exec_block() {
-  # Prefix each non-empty line with YAML exec list indentation.
   sed '/^[[:space:]]*$/d; s/^/        - /'
 }
 
-emit_routes_from_solver_iface() {
-  # Emits "ip route replace ..." and "ip -6 route replace ..." derived from solver.
-  # Also WARNs if the interface object or routes are missing/empty.
+# Check if ANY non-default routes exist on an interface (IPv4)
+iface_has_v4_routes() {
+  local node="$1"
+  local iface="$2"
+  jq -e --arg n "$node" --arg i "$iface" '
+    (.site.nodes[$n].interfaces[$i].routes4 // [])
+    | map(select(.dst != "0.0.0.0/0"))
+    | length > 0
+  ' "$SOLVER_JSON" >/dev/null 2>&1
+}
+
+# Check if ANY non-default routes exist on an interface (IPv6)
+iface_has_v6_routes() {
+  local node="$1"
+  local iface="$2"
+  jq -e --arg n "$node" --arg i "$iface" '
+    (.site.nodes[$n].interfaces[$i].routes6 // [])
+    | map(select(.dst != "::/0"))
+    | length > 0
+  ' "$SOLVER_JSON" >/dev/null 2>&1
+}
+
+# Emit ALL non-default routes from solver for an interface
+emit_solver_routes() {
   local node="$1"
   local iface="$2"
 
-  local iface_exists
-  iface_exists="$(jq -r --arg n "$node" --arg i "$iface" \
-    '.site.nodes[$n].interfaces[$i] != null' "$SOLVER_JSON" 2>/dev/null || echo "false")"
-
-  if [ "$iface_exists" != "true" ]; then
-    echo "WARNING: Missing solver interface object: .site.nodes[\"$node\"].interfaces[\"$iface\"]" >&2
-    return 0
-  fi
-
-  local v4 v6
-  v4="$(jq -r --arg n "$node" --arg i "$iface" '
-    (.site.nodes[$n].interfaces[$i].routes4 // [])
-    | map(select(.dst != "0.0.0.0/0"))
-    | .[]
-    | "ip route replace \(.dst) via \(.via4)"
-  ' "$SOLVER_JSON")"
-
-  v6="$(jq -r --arg n "$node" --arg i "$iface" '
-    (.site.nodes[$n].interfaces[$i].routes6 // [])
-    | map(select(.dst != "::/0"))
-    | .[]
-    | "ip -6 route replace \(.dst) via \(.via6)"
-  ' "$SOLVER_JSON")"
-
-  if [ -z "${v4//[[:space:]]/}" ] && [ -z "${v6//[[:space:]]/}" ]; then
-    echo "WARNING: No non-default routes in solver for $node/$iface (routes4/routes6 empty or missing)" >&2
-    return 0
-  fi
-
-  # Print v4 then v6 (each may be empty)
-  if [ -n "${v4//[[:space:]]/}" ]; then
-    printf '%s\n' "$v4"
-  fi
-  if [ -n "${v6//[[:space:]]/}" ]; then
-    printf '%s\n' "$v6"
-  fi
-}
-
-# Tenants list (for ISP return routes)
-TENANT_SUBNETS_V4="$(jq_opt '.site._routingMaps.tenants.ipv4[]?' 'tenant ipv4 list')"
-TENANT_SUBNETS_V6="$(jq_opt '.site._routingMaps.tenants.ipv6[]?' 'tenant ipv6 list')"
-
-emit_isp_return_routes() {
-  # These routes are NOT in solver (ISP is static), but are REQUIRED for return traffic.
-  # We derive tenant subnets from solver and route them back to core.
-  if [ -z "${TENANT_SUBNETS_V4//[[:space:]]/}" ] && [ -z "${TENANT_SUBNETS_V6//[[:space:]]/}" ]; then
-    echo "WARNING: Missing tenant subnet lists in solver (.site._routingMaps.tenants.*). ISP will not get return routes." >&2
-    return 0
-  fi
-
-  if [ -n "${TENANT_SUBNETS_V4//[[:space:]]/}" ]; then
-    while IFS= read -r dst; do
-      [ -z "${dst:-}" ] && continue
-      printf 'ip route replace %s via %s\n' "$dst" "203.0.113.1"
-    done <<<"$TENANT_SUBNETS_V4"
-  else
-    echo "WARNING: Missing .site._routingMaps.tenants.ipv4[] in solver; no ISP IPv4 return routes emitted" >&2
-  fi
-
-  if [ -n "${TENANT_SUBNETS_V6//[[:space:]]/}" ]; then
-    while IFS= read -r dst; do
-      [ -z "${dst:-}" ] && continue
-      printf 'ip -6 route replace %s via %s\n' "$dst" "2001:db8:ffff::1"
-    done <<<"$TENANT_SUBNETS_V6"
-  else
-    echo "WARNING: Missing .site._routingMaps.tenants.ipv6[] in solver; no ISP IPv6 return routes emitted" >&2
-  fi
+  jq -r --arg n "$node" --arg i "$iface" '
+    (
+      (.site.nodes[$n].interfaces[$i].routes4 // [])
+      | map(select(.dst != "0.0.0.0/0"))
+      | .[]
+      | "ip route replace \(.dst) via \(.via4)"
+    ),
+    (
+      (.site.nodes[$n].interfaces[$i].routes6 // [])
+      | map(select(.dst != "::/0"))
+      | .[]
+      | "ip -6 route replace \(.dst) via \(.via6)"
+    )
+  ' "$SOLVER_JSON"
 }
 
 # -----------------------------
-# P2P link addresses
+# Addresses from solver
 # -----------------------------
 
 ACCESS_POLICY_V4="$(jq_req '.site.links["p2p-s-router-access-s-router-policy"].endpoints["s-router-access"].addr4' "access-policy addr4")"
@@ -141,10 +95,6 @@ CORE_UP_V6="$(jq_req '.site.links["p2p-s-router-core-s-router-upstream-selector"
 UP_CORE_V4="$(jq_req '.site.links["p2p-s-router-core-s-router-upstream-selector"].endpoints["s-router-upstream-selector"].addr4' "up-core addr4")"
 UP_CORE_V6="$(jq_req '.site.links["p2p-s-router-core-s-router-upstream-selector"].endpoints["s-router-upstream-selector"].addr6' "up-core addr6")"
 
-# -----------------------------
-# Client subnet
-# -----------------------------
-
 CLIENT_SUBNET_V4="$(jq_req '.site.compilerIR.domains.tenants[] | select(.name=="clients") | .ipv4' "clients ipv4")"
 CLIENT_SUBNET_V6="$(jq_req '.site.compilerIR.domains.tenants[] | select(.name=="clients") | .ipv6' "clients ipv6")"
 
@@ -154,30 +104,54 @@ CLIENT_GW_V6="$(echo "$CLIENT_SUBNET_V6" | sed 's|::/64|::1|')"
 CLIENT_IP_V4="$(echo "$CLIENT_SUBNET_V4" | awk -F'[./]' '{printf "%d.%d.%d.2/24\n",$1,$2,$3}')"
 CLIENT_IP_V6="$(echo "$CLIENT_SUBNET_V6" | sed 's|::/64|::2/64|')"
 
-# -----------------------------
-# Static ISP
-# -----------------------------
-
 ISP_CORE_V4="203.0.113.1/30"
 ISP_CORE_V6="2001:db8:ffff::1/48"
 ISP_ISP_V4="203.0.113.2/30"
 ISP_ISP_V6="2001:db8:ffff::2/48"
 
 # -----------------------------
-# Routes REQUIRED for connectivity (derived from solver + static ISP)
-#
-# NOTE:
-# - These non-default tenant routes are the "missing" pieces that make return traffic work:
-#   policy -> access (tenants)
-#   upstream-selector -> policy (tenants)
-#   core -> upstream-selector (tenants)
-# - ISP return routes are NOT in solver, injected here for all tenant subnets.
+# GAP ANALYSIS
 # -----------------------------
 
-POLICY_TO_ACCESS_ROUTES="$(emit_routes_from_solver_iface "s-router-policy" "p2p-s-router-access-s-router-policy" || true)"
-UPSEL_TO_POLICY_ROUTES="$(emit_routes_from_solver_iface "s-router-upstream-selector" "p2p-s-router-policy-s-router-upstream-selector" || true)"
-CORE_TO_UPSEL_ROUTES="$(emit_routes_from_solver_iface "s-router-core" "p2p-s-router-core-s-router-upstream-selector" || true)"
-ISP_RETURN_ROUTES="$(emit_isp_return_routes || true)"
+POLICY_TO_ACCESS_ROUTES=""
+UPSEL_TO_POLICY_ROUTES=""
+CORE_TO_UPSEL_ROUTES=""
+ISP_RETURN_ROUTES=""
+
+# policy → access
+if iface_has_v4_routes "s-router-policy" "p2p-s-router-access-s-router-policy" || \
+   iface_has_v6_routes "s-router-policy" "p2p-s-router-access-s-router-policy"; then
+  POLICY_TO_ACCESS_ROUTES="$(emit_solver_routes "s-router-policy" "p2p-s-router-access-s-router-policy")"
+else
+  echo "GAP: Solver missing tenant routes on s-router-policy → injecting client subnet only" >&2
+  POLICY_TO_ACCESS_ROUTES+="ip route replace ${CLIENT_SUBNET_V4} via ${ACCESS_POLICY_V4%/*}"$'\n'
+  POLICY_TO_ACCESS_ROUTES+="ip -6 route replace ${CLIENT_SUBNET_V6} via ${ACCESS_POLICY_V6%/*}"$'\n'
+fi
+
+# upstream-selector → policy
+if iface_has_v4_routes "s-router-upstream-selector" "p2p-s-router-policy-s-router-upstream-selector" || \
+   iface_has_v6_routes "s-router-upstream-selector" "p2p-s-router-policy-s-router-upstream-selector"; then
+  UPSEL_TO_POLICY_ROUTES="$(emit_solver_routes "s-router-upstream-selector" "p2p-s-router-policy-s-router-upstream-selector")"
+else
+  echo "GAP: Solver missing tenant routes on s-router-upstream-selector → injecting client subnet only" >&2
+  UPSEL_TO_POLICY_ROUTES+="ip route replace ${CLIENT_SUBNET_V4} via ${POLICY_UP_V4%/*}"$'\n'
+  UPSEL_TO_POLICY_ROUTES+="ip -6 route replace ${CLIENT_SUBNET_V6} via ${POLICY_UP_V6%/*}"$'\n'
+fi
+
+# core → upstream-selector
+if iface_has_v4_routes "s-router-core" "p2p-s-router-core-s-router-upstream-selector" || \
+   iface_has_v6_routes "s-router-core" "p2p-s-router-core-s-router-upstream-selector"; then
+  CORE_TO_UPSEL_ROUTES="$(emit_solver_routes "s-router-core" "p2p-s-router-core-s-router-upstream-selector")"
+else
+  echo "GAP: Solver missing tenant routes on s-router-core → injecting client subnet only" >&2
+  CORE_TO_UPSEL_ROUTES+="ip route replace ${CLIENT_SUBNET_V4} via ${UP_CORE_V4%/*}"$'\n'
+  CORE_TO_UPSEL_ROUTES+="ip -6 route replace ${CLIENT_SUBNET_V6} via ${UP_CORE_V6%/*}"$'\n'
+fi
+
+# ISP return (never in solver)
+echo "GAP: ISP return routes not modeled in solver → injecting client subnet return" >&2
+ISP_RETURN_ROUTES+="ip route replace ${CLIENT_SUBNET_V4} via 203.0.113.1"$'\n'
+ISP_RETURN_ROUTES+="ip -6 route replace ${CLIENT_SUBNET_V6} via 2001:db8:ffff::1"$'\n'
 
 # -----------------------------
 # Emit topology
@@ -222,7 +196,7 @@ topology:
         - ip -6 addr replace ${POLICY_ACCESS_V6} dev eth1
         - ip addr replace ${POLICY_UP_V4} dev eth2
         - ip -6 addr replace ${POLICY_UP_V6} dev eth2
-$(printf '%s\n' "${POLICY_TO_ACCESS_ROUTES:-}" | indent_exec_block)
+$(printf '%s\n' "$POLICY_TO_ACCESS_ROUTES" | indent_exec_block)
         - ip route replace default via ${UP_POLICY_V4%/*}
         - ip -6 route replace default via ${UP_POLICY_V6%/*}
 
@@ -237,7 +211,7 @@ $(printf '%s\n' "${POLICY_TO_ACCESS_ROUTES:-}" | indent_exec_block)
         - ip link set eth2 up
         - ip addr replace ${ISP_CORE_V4} dev eth2
         - ip -6 addr replace ${ISP_CORE_V6} dev eth2
-$(printf '%s\n' "${CORE_TO_UPSEL_ROUTES:-}" | indent_exec_block)
+$(printf '%s\n' "$CORE_TO_UPSEL_ROUTES" | indent_exec_block)
         - ip route replace default via 203.0.113.2
         - ip -6 route replace default via 2001:db8:ffff::2
 
@@ -252,7 +226,7 @@ $(printf '%s\n' "${CORE_TO_UPSEL_ROUTES:-}" | indent_exec_block)
         - ip -6 addr replace ${UP_CORE_V6} dev eth1
         - ip addr replace ${UP_POLICY_V4} dev eth2
         - ip -6 addr replace ${UP_POLICY_V6} dev eth2
-$(printf '%s\n' "${UPSEL_TO_POLICY_ROUTES:-}" | indent_exec_block)
+$(printf '%s\n' "$UPSEL_TO_POLICY_ROUTES" | indent_exec_block)
         - ip route replace default via ${CORE_UP_V4%/*}
         - ip -6 route replace default via ${CORE_UP_V6%/*}
 
@@ -264,7 +238,7 @@ $(printf '%s\n' "${UPSEL_TO_POLICY_ROUTES:-}" | indent_exec_block)
         - ip link set eth1 up
         - ip addr replace ${ISP_ISP_V4} dev eth1
         - ip -6 addr replace ${ISP_ISP_V6} dev eth1
-$(printf '%s\n' "${ISP_RETURN_ROUTES:-}" | indent_exec_block)
+$(printf '%s\n' "$ISP_RETURN_ROUTES" | indent_exec_block)
 
     client:
       network-mode: none

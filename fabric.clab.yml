@@ -93,11 +93,7 @@ topology:
         - ip link set eth1 up
         - ip addr replace 203.0.113.2/30 dev eth1
         - ip -6 addr replace 2001:db8:ffff::2/48 dev eth1
-        - ip route replace 10.20.10.0/24 via 203.0.113.1
-        - ip route replace 10.20.15.0/24 via 203.0.113.1
         - ip route replace 10.20.20.0/24 via 203.0.113.1
-        - ip -6 route replace fd42:dead:beef:10::/64 via 2001:db8:ffff::1
-        - ip -6 route replace fd42:dead:beef:15::/64 via 2001:db8:ffff::1
         - ip -6 route replace fd42:dead:beef:20::/64 via 2001:db8:ffff::1
 
     client:
