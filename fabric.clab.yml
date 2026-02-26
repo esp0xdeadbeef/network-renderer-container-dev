@@ -4,15 +4,14 @@ topology:
   defaults:
     kind: linux
     image: frrouting/frr:latest
+    network-mode: none
     sysctls:
       net.ipv4.ip_forward: "1"
       net.ipv6.conf.all.forwarding: "1"
-      net.ipv4.conf.all.rp_filter: "0"
       net.ipv4.conf.default.rp_filter: "0"
 
   nodes:
     s-router-access:
-      network-mode: none
       exec:
         - sysctl -w net.ipv4.ip_forward=1
         - sysctl -w net.ipv6.conf.all.forwarding=1
@@ -26,7 +25,6 @@ topology:
         - ip -6 route replace default via fd42:dead:beef:1000:0:0:0:1
 
     s-router-policy:
-      network-mode: none
       exec:
         - sysctl -w net.ipv4.ip_forward=1
         - sysctl -w net.ipv6.conf.all.forwarding=1
@@ -45,28 +43,7 @@ topology:
         - ip route replace default via 10.10.0.5
         - ip -6 route replace default via fd42:dead:beef:1000:0:0:0:5
 
-    s-router-core:
-      network-mode: none
-      exec:
-        - sysctl -w net.ipv4.ip_forward=1
-        - sysctl -w net.ipv6.conf.all.forwarding=1
-        - ip link set eth1 up
-        - ip addr replace 10.10.0.2/31 dev eth1
-        - ip -6 addr replace fd42:dead:beef:1000:0:0:0:2/127 dev eth1
-        - ip link set eth2 up
-        - ip addr replace 203.0.113.1/30 dev eth2
-        - ip -6 addr replace 2001:db8:ffff::1/48 dev eth2
-        - ip route replace 10.20.10.0/24 via 10.10.0.3
-        - ip route replace 10.20.15.0/24 via 10.10.0.3
-        - ip route replace 10.20.20.0/24 via 10.10.0.3
-        - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:3
-        - ip -6 route replace fd42:dead:beef:15::/64 via fd42:dead:beef:1000:0:0:0:3
-        - ip -6 route replace fd42:dead:beef:20::/64 via fd42:dead:beef:1000:0:0:0:3
-        - ip route replace default via 203.0.113.2
-        - ip -6 route replace default via 2001:db8:ffff::2
-
     s-router-upstream-selector:
-      network-mode: none
       exec:
         - sysctl -w net.ipv4.ip_forward=1
         - sysctl -w net.ipv6.conf.all.forwarding=1
@@ -85,19 +62,40 @@ topology:
         - ip route replace default via 10.10.0.2
         - ip -6 route replace default via fd42:dead:beef:1000:0:0:0:2
 
+    s-router-core:
+      exec:
+        - sysctl -w net.ipv4.ip_forward=1
+        - sysctl -w net.ipv6.conf.all.forwarding=1
+        - ip link set eth1 up
+        - ip addr replace 10.10.0.2/31 dev eth1
+        - ip -6 addr replace fd42:dead:beef:1000:0:0:0:2/127 dev eth1
+        - ip link set eth2 up
+        - ip addr replace 203.0.113.1/30 dev eth2
+        - ip -6 addr replace 2001:db8:ffff::1/48 dev eth2
+        - ip route replace 10.20.10.0/24 via 10.10.0.3
+        - ip route replace 10.20.15.0/24 via 10.10.0.3
+        - ip route replace 10.20.20.0/24 via 10.10.0.3
+        - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:3
+        - ip -6 route replace fd42:dead:beef:15::/64 via fd42:dead:beef:1000:0:0:0:3
+        - ip -6 route replace fd42:dead:beef:20::/64 via fd42:dead:beef:1000:0:0:0:3
+        - ip route replace default via 203.0.113.2
+        - ip -6 route replace default via 2001:db8:ffff::2
+
     isp:
-      network-mode: none
       exec:
         - sysctl -w net.ipv4.ip_forward=1
         - sysctl -w net.ipv6.conf.all.forwarding=1
         - ip link set eth1 up
         - ip addr replace 203.0.113.2/30 dev eth1
         - ip -6 addr replace 2001:db8:ffff::2/48 dev eth1
+        - ip route replace 10.20.10.0/24 via 203.0.113.1
+        - ip route replace 10.20.15.0/24 via 203.0.113.1
         - ip route replace 10.20.20.0/24 via 203.0.113.1
+        - ip -6 route replace fd42:dead:beef:10::/64 via 2001:db8:ffff::1
+        - ip -6 route replace fd42:dead:beef:15::/64 via 2001:db8:ffff::1
         - ip -6 route replace fd42:dead:beef:20::/64 via 2001:db8:ffff::1
 
     client:
-      network-mode: none
       exec:
         - ip link set eth1 up
         - ip addr replace 10.20.20.2/24 dev eth1
