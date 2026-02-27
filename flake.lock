@@ -1,5 +1,40 @@
 {
   "nodes": {
+    "network-compiler": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "nixpkgs-network": "nixpkgs-network"
+      },
+      "locked": {
+        "lastModified": 1772150952,
+        "narHash": "sha256-l6VyLvaKFqwFW9Ttv9nma/gIP+Js4ug4DZM867/yBhU=",
+        "path": "/home/deadbeef/github/network-compiler",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/deadbeef/github/network-compiler",
+        "type": "path"
+      }
+    },
+    "network-solver": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1772153521,
+        "narHash": "sha256-mqbuhGoLFQqoMiSsw3T2av9VRpaT/54SqtfKn8A4e9g=",
+        "path": "/home/deadbeef/github/network-solver",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/deadbeef/github/network-solver",
+        "type": "path"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1767313136,
@@ -16,8 +51,27 @@
         "type": "github"
       }
     },
+    "nixpkgs-network": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1722112448,
+        "narHash": "sha256-Ugp/K1wA7N0u0xE27YP/fvFaZqK9dYKSjJ/OoTdQ7rc=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "ac56c456ebe4901c561d3ebf1c98fbd970aea753",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "ac56c456ebe4901c561d3ebf1c98fbd970aea753",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
+        "network-compiler": "network-compiler",
+        "network-solver": "network-solver",
         "nixpkgs": "nixpkgs"
       }
     }
