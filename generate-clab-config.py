@@ -1,10 +1,26 @@
 # ./generate-clab-config.py
 #!/usr/bin/env python3
 
+from __future__ import annotations
+
 import sys
-import json
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Tuple
+
+# Allow imports from the repo checkout even when executed from /nix/store
+sys.path.insert(0, str(Path.cwd()))
+
+import yaml  # type: ignore
+
+from clabgen.solver import load_solver, get_required
+from clabgen.addressing import (
+    tenant_gateway_v4,
+    tenant_gateway_v6,
+    tenant_host_ip_v4,
+    tenant_host_ip_v6,
+)
+from clabgen.routes import emit_routes, emit_default
+from clabgen.p2p_alloc import alloc_p2p_links
 
 DEFAULT_SOLVER_JSON = "output-network-solver.json"
 DEFAULT_TOPO_FILE = "fabric.clab.yml"
@@ -16,81 +32,31 @@ ISP_ISP_V4 = "203.0.113.2/30"
 ISP_ISP_V6 = "2001:db8:ffff::2/48"
 
 
-def fail(msg: str) -> None:
-    print(f"ERROR: {msg}", file=sys.stderr)
-    sys.exit(1)
+def _base_exec() -> List[str]:
+    return [
+        "sysctl -w net.ipv4.ip_forward=1",
+        "sysctl -w net.ipv6.conf.all.forwarding=1",
+    ]
 
 
-def load_solver(path: Path) -> Dict[str, Any]:
-    if not path.exists():
-        fail(f"Solver JSON not found: {path}")
-    with path.open() as f:
-        return json.load(f)
+def _gather_used_p2p_addrs(data: Dict[str, Any]) -> Tuple[List[str], List[str]]:
+    used4: List[str] = []
+    used6: List[str] = []
+    for link in (data.get("site", {}).get("links", {}) or {}).values():
+        eps = (link or {}).get("endpoints", {}) or {}
+        for ep in eps.values():
+            if not isinstance(ep, dict):
+                continue
+            a4 = ep.get("addr4")
+            a6 = ep.get("addr6")
+            if isinstance(a4, str) and a4:
+                used4.append(a4)
+            if isinstance(a6, str) and a6:
+                used6.append(a6)
+    return used4, used6
 
 
-def get_required(d: Dict[str, Any], path: List[str], desc: str):
-    cur = d
-    for p in path:
-        if p not in cur:
-            fail(f"Missing required solver field: {desc}")
-        cur = cur[p]
-    return cur
-
-
-def tenant_gateway_v4(cidr: str) -> str:
-    parts = cidr.split("/")[0].split(".")
-    return f"{parts[0]}.{parts[1]}.{parts[2]}.1"
-
-
-def tenant_ip_v4(cidr: str) -> str:
-    parts = cidr.split("/")[0].split(".")
-    return f"{parts[0]}.{parts[1]}.{parts[2]}.2/24"
-
-
-def tenant_gateway_v6(cidr: str) -> str:
-    return cidr.replace("::/64", "::1")
-
-
-def tenant_ip_v6(cidr: str) -> str:
-    return cidr.replace("::/64", "::2/64")
-
-
-def emit_routes(data, node: str, iface: str, version: int) -> List[str]:
-    routes = (
-        data["site"]["nodes"]
-        .get(node, {})
-        .get("interfaces", {})
-        .get(iface, {})
-        .get(f"routes{version}", [])
-    )
-    cmds = []
-    for r in routes:
-        if version == 4:
-            if r["dst"] != "0.0.0.0/0":
-                cmds.append(f"ip route replace {r['dst']} via {r['via4']}")
-        else:
-            if r["dst"] != "::/0":
-                cmds.append(f"ip -6 route replace {r['dst']} via {r['via6']}")
-    return cmds
-
-
-def emit_default(data, node: str, iface: str, version: int) -> str:
-    routes = (
-        data["site"]["nodes"]
-        .get(node, {})
-        .get("interfaces", {})
-        .get(iface, {})
-        .get(f"routes{version}", [])
-    )
-    for r in routes:
-        if (version == 4 and r["dst"] == "0.0.0.0/0") or (
-            version == 6 and r["dst"] == "::/0"
-        ):
-            return r[f"via{version}"]
-    return ""
-
-
-def main():
+def main() -> None:
     solver_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(DEFAULT_SOLVER_JSON)
     topo_path = Path(sys.argv[2]) if len(sys.argv) > 2 else Path(DEFAULT_TOPO_FILE)
 
@@ -102,83 +68,144 @@ def main():
 
     core = assumptions["core"]
     policy = assumptions["policy"]
-    access = assumptions["singleAccess"]
+    access_base = assumptions["singleAccess"]
     upsel = assumptions["upstreamSelector"]
 
     tenants_v4 = data["site"]["_routingMaps"]["tenants"]["ipv4"]
     tenants_v6 = data["site"]["_routingMaps"]["tenants"]["ipv6"]
+    tenant_domains = data["site"]["compilerIR"]["domains"]["tenants"]
 
-    client_tenant_v4 = next(
-        t["ipv4"]
-        for t in data["site"]["compilerIR"]["domains"]["tenants"]
-        if t["name"] == "clients"
-    )
-    client_tenant_v6 = next(
-        t["ipv6"]
-        for t in data["site"]["compilerIR"]["domains"]["tenants"]
-        if t["name"] == "clients"
-    )
-
-    access_if = "p2p-s-router-access-s-router-policy"
     policy_if_up = "p2p-s-router-policy-s-router-upstream-selector"
-    policy_if_access = "p2p-s-router-access-s-router-policy"
     upsel_if = "p2p-s-router-policy-s-router-upstream-selector"
     core_if = "p2p-s-router-core-s-router-upstream-selector"
 
-    access_def4 = emit_default(data, access, access_if, 4)
-    access_def6 = emit_default(data, access, access_if, 6)
     policy_def4 = emit_default(data, policy, policy_if_up, 4)
     policy_def6 = emit_default(data, policy, policy_if_up, 6)
     upsel_def4 = emit_default(data, upsel, core_if, 4)
     upsel_def6 = emit_default(data, upsel, core_if, 6)
 
-    client_gw_v4 = tenant_gateway_v4(client_tenant_v4)
-    client_ip_v4 = tenant_ip_v4(client_tenant_v4)
-    client_gw_v6 = tenant_gateway_v6(client_tenant_v6)
-    client_ip_v6 = tenant_ip_v6(client_tenant_v6)
+    # Allocate unique /31 + /127 per access<->policy
+    p2p_pool4 = data["site"]["compilerIR"]["addressPools"]["p2p"]["ipv4"]
+    p2p_pool6 = data["site"]["compilerIR"]["addressPools"]["p2p"]["ipv6"]
+    used_p2p4, used_p2p6 = _gather_used_p2p_addrs(data)
 
-    nodes = {}
+    p2p_links = alloc_p2p_links(
+        p2p_pool4,
+        p2p_pool6,
+        count=len(tenant_domains),
+        used_addr4=used_p2p4,
+        used_addr6=used_p2p6,
+    )
 
-    def base_exec():
-        return [
-            "sysctl -w net.ipv4.ip_forward=1",
-            "sysctl -w net.ipv6.conf.all.forwarding=1",
+    nodes: Dict[str, Any] = {}
+    links: List[Dict[str, Any]] = []
+
+    # ----------------------
+    # ACCESS + CLIENTS
+    # ----------------------
+    for idx, tenant in enumerate(tenant_domains):
+        tenant_name = tenant["name"]
+        tenant_v4 = tenant["ipv4"]
+        tenant_v6 = tenant["ipv6"]
+
+        access_name = f"{access_base}-{tenant_name}"
+        client_name = f"client-{tenant_name}"
+
+        link_addrs = p2p_links[idx]
+
+        # Access = first IP in /31,/127
+        access_p2p_v4 = str(link_addrs.a4)
+        access_p2p_v6 = str(link_addrs.a6)
+
+        # Policy = second IP
+        policy_p2p_ip4 = str(link_addrs.b4.ip)
+        policy_p2p_ip6 = str(link_addrs.b6.ip)
+
+        gw_v4 = tenant_gateway_v4(tenant_v4)
+        gw_v6 = tenant_gateway_v6(tenant_v6)
+        host_v4 = tenant_host_ip_v4(tenant_v4)
+        host_v6 = tenant_host_ip_v6(tenant_v6)
+
+        nodes[access_name] = {
+            "exec": _base_exec()
+            + [
+                "ip link set eth1 up",
+                f"ip addr replace {access_p2p_v4} dev eth1",
+                f"ip -6 addr replace {access_p2p_v6} dev eth1",
+                "ip link set eth2 up",
+                f"ip addr replace {gw_v4}/24 dev eth2",
+                f"ip -6 addr replace {gw_v6}/64 dev eth2",
+                f"ip route replace default via {policy_p2p_ip4}",
+                f"ip -6 route replace default via {policy_p2p_ip6}",
+            ],
+        }
+
+        nodes[client_name] = {
+            "exec": [
+                "ip link set eth1 up",
+                f"ip addr replace {host_v4} dev eth1",
+                f"ip -6 addr replace {host_v6} dev eth1",
+                f"ip route replace default via {gw_v4}",
+                f"ip -6 route replace default via {gw_v6}",
+            ]
+        }
+
+        links.append({"endpoints": [f"{access_name}:eth2", f"{client_name}:eth1"]})
+
+    # ----------------------
+    # POLICY
+    # ----------------------
+    policy_exec: List[str] = _base_exec()
+
+    # Access-facing interfaces
+    for idx, tenant in enumerate(tenant_domains):
+        tenant_name = tenant["name"]
+        eth = idx + 1
+        link_addrs = p2p_links[idx]
+
+        policy_exec += [
+            f"ip link set eth{eth} up",
+            f"ip addr replace {link_addrs.b4} dev eth{eth}",
+            f"ip -6 addr replace {link_addrs.b6} dev eth{eth}",
         ]
 
-    nodes[access] = {
-        "exec": base_exec()
-        + [
-            "ip link set eth1 up",
-            f"ip addr replace {data['site']['links'][access_if]['endpoints'][access]['addr4']} dev eth1",
-            f"ip -6 addr replace {data['site']['links'][access_if]['endpoints'][access]['addr6']} dev eth1",
-            "ip link set eth2 up",
-            f"ip addr replace {client_gw_v4}/24 dev eth2",
-            f"ip -6 addr replace {client_gw_v6}/64 dev eth2",
-            f"ip route replace default via {access_def4}",
-            f"ip -6 route replace default via {access_def6}",
-        ],
-    }
+        access_name = f"{access_base}-{tenant_name}"
+        links.append({"endpoints": [f"{access_name}:eth1", f"{policy}:eth{eth}"]})
 
-    nodes[policy] = {
-        "exec": base_exec()
-        + [
-            "ip link set eth1 up",
-            "ip link set eth2 up",
-            f"ip addr replace {data['site']['links'][access_if]['endpoints'][policy]['addr4']} dev eth1",
-            f"ip -6 addr replace {data['site']['links'][access_if]['endpoints'][policy]['addr6']} dev eth1",
-            f"ip addr replace {data['site']['links'][policy_if_up]['endpoints'][policy]['addr4']} dev eth2",
-            f"ip -6 addr replace {data['site']['links'][policy_if_up]['endpoints'][policy]['addr6']} dev eth2",
+    # Upstream interface
+    up_eth = len(tenant_domains) + 1
+    policy_up_addr4 = data["site"]["links"][policy_if_up]["endpoints"][policy]["addr4"]
+    policy_up_addr6 = data["site"]["links"][policy_if_up]["endpoints"][policy]["addr6"]
+
+    policy_exec += [
+        f"ip link set eth{up_eth} up",
+        f"ip addr replace {policy_up_addr4} dev eth{up_eth}",
+        f"ip -6 addr replace {policy_up_addr6} dev eth{up_eth}",
+    ]
+
+    # Tenant routes -> correct access peer
+    for idx, tenant in enumerate(tenant_domains):
+        tenant_v4 = tenant["ipv4"]
+        tenant_v6 = tenant["ipv6"]
+        link_addrs = p2p_links[idx]
+
+        policy_exec += [
+            f"ip route replace {tenant_v4} via {link_addrs.a4.ip}",
+            f"ip -6 route replace {tenant_v6} via {link_addrs.a6.ip}",
         ]
-        + emit_routes(data, policy, policy_if_access, 4)
-        + emit_routes(data, policy, policy_if_access, 6)
-        + [
-            f"ip route replace default via {policy_def4}",
-            f"ip -6 route replace default via {policy_def6}",
-        ],
-    }
 
+    policy_exec += [
+        f"ip route replace default via {policy_def4}",
+        f"ip -6 route replace default via {policy_def6}",
+    ]
+
+    nodes[policy] = {"exec": policy_exec}
+
+    # ----------------------
+    # UPSTREAM SELECTOR
+    # ----------------------
     nodes[upsel] = {
-        "exec": base_exec()
+        "exec": _base_exec()
         + [
             "ip link set eth1 up",
             "ip link set eth2 up",
@@ -186,17 +213,21 @@ def main():
             f"ip -6 addr replace {data['site']['links'][core_if]['endpoints'][upsel]['addr6']} dev eth1",
             f"ip addr replace {data['site']['links'][upsel_if]['endpoints'][upsel]['addr4']} dev eth2",
             f"ip -6 addr replace {data['site']['links'][upsel_if]['endpoints'][upsel]['addr6']} dev eth2",
+            # 🔥 FIX: ensure return path to tenants via policy
         ]
-        + emit_routes(data, upsel, upsel_if, 4)
-        + emit_routes(data, upsel, upsel_if, 6)
+        + [f"ip route replace {v4} via {policy_up_addr4.split('/')[0]}" for v4 in tenants_v4]
+        + [f"ip -6 route replace {v6} via {policy_up_addr6.split('/')[0]}" for v6 in tenants_v6]
         + [
             f"ip route replace default via {upsel_def4}",
             f"ip -6 route replace default via {upsel_def6}",
         ],
     }
 
+    # ----------------------
+    # CORE
+    # ----------------------
     nodes[core] = {
-        "exec": base_exec()
+        "exec": _base_exec()
         + [
             "ip link set eth1 up",
             f"ip addr replace {data['site']['links'][core_if]['endpoints'][core]['addr4']} dev eth1",
@@ -213,8 +244,11 @@ def main():
         ],
     }
 
+    # ----------------------
+    # ISP
+    # ----------------------
     nodes["isp"] = {
-        "exec": base_exec()
+        "exec": _base_exec()
         + [
             "ip link set eth1 up",
             f"ip addr replace {ISP_ISP_V4} dev eth1",
@@ -224,15 +258,11 @@ def main():
         + [f"ip -6 route replace {v6} via 2001:db8:ffff::1" for v6 in tenants_v6],
     }
 
-    nodes["client"] = {
-        "exec": [
-            "ip link set eth1 up",
-            f"ip addr replace {client_ip_v4} dev eth1",
-            f"ip -6 addr replace {client_ip_v6} dev eth1",
-            f"ip route replace default via {client_gw_v4}",
-            f"ip -6 route replace default via {client_gw_v6}",
-        ]
-    }
+    links += [
+        {"endpoints": [f"{policy}:eth{up_eth}", f"{upsel}:eth2"]},
+        {"endpoints": [f"{core}:eth1", f"{upsel}:eth1"]},
+        {"endpoints": [f"{core}:eth2", "isp:eth1"]},
+    ]
 
     topology = {
         "name": "fabric",
@@ -248,17 +278,9 @@ def main():
                 },
             },
             "nodes": nodes,
-            "links": [
-                {"endpoints": [f"{access}:eth1", f"{policy}:eth1"]},
-                {"endpoints": [f"{policy}:eth2", f"{upsel}:eth2"]},
-                {"endpoints": [f"{core}:eth1", f"{upsel}:eth1"]},
-                {"endpoints": [f"{core}:eth2", "isp:eth1"]},
-                {"endpoints": [f"{access}:eth2", "client:eth1"]},
-            ],
+            "links": links,
         },
     }
-
-    import yaml
 
     with topo_path.open("w") as f:
         yaml.dump(topology, f, sort_keys=False)

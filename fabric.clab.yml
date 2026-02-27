@@ -9,34 +9,85 @@ topology:
       net.ipv6.conf.all.forwarding: '1'
       net.ipv4.conf.default.rp_filter: '0'
   nodes:
-    s-router-access:
+    s-router-access-mgmt:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
       - ip link set eth1 up
-      - ip addr replace 10.10.0.0/31 dev eth1
-      - ip -6 addr replace fd42:dead:beef:1000:0:0:0:0/127 dev eth1
+      - ip addr replace 10.10.0.6/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1000::6/127 dev eth1
+      - ip link set eth2 up
+      - ip addr replace 10.20.10.1/24 dev eth2
+      - ip -6 addr replace fd42:dead:beef:10::1/64 dev eth2
+      - ip route replace default via 10.10.0.7
+      - ip -6 route replace default via fd42:dead:beef:1000::7
+    client-mgmt:
+      exec:
+      - ip link set eth1 up
+      - ip addr replace 10.20.10.2/24 dev eth1
+      - ip -6 addr replace fd42:dead:beef:10::2/64 dev eth1
+      - ip route replace default via 10.20.10.1
+      - ip -6 route replace default via fd42:dead:beef:10::1
+    s-router-access-admin:
+      exec:
+      - sysctl -w net.ipv4.ip_forward=1
+      - sysctl -w net.ipv6.conf.all.forwarding=1
+      - ip link set eth1 up
+      - ip addr replace 10.10.0.8/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1000::8/127 dev eth1
+      - ip link set eth2 up
+      - ip addr replace 10.20.15.1/24 dev eth2
+      - ip -6 addr replace fd42:dead:beef:15::1/64 dev eth2
+      - ip route replace default via 10.10.0.9
+      - ip -6 route replace default via fd42:dead:beef:1000::9
+    client-admin:
+      exec:
+      - ip link set eth1 up
+      - ip addr replace 10.20.15.2/24 dev eth1
+      - ip -6 addr replace fd42:dead:beef:15::2/64 dev eth1
+      - ip route replace default via 10.20.15.1
+      - ip -6 route replace default via fd42:dead:beef:15::1
+    s-router-access-clients:
+      exec:
+      - sysctl -w net.ipv4.ip_forward=1
+      - sysctl -w net.ipv6.conf.all.forwarding=1
+      - ip link set eth1 up
+      - ip addr replace 10.10.0.10/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1000::a/127 dev eth1
       - ip link set eth2 up
       - ip addr replace 10.20.20.1/24 dev eth2
       - ip -6 addr replace fd42:dead:beef:20::1/64 dev eth2
-      - ip route replace default via 10.10.0.1
-      - ip -6 route replace default via fd42:dead:beef:1000:0:0:0:1
+      - ip route replace default via 10.10.0.11
+      - ip -6 route replace default via fd42:dead:beef:1000::b
+    client-clients:
+      exec:
+      - ip link set eth1 up
+      - ip addr replace 10.20.20.2/24 dev eth1
+      - ip -6 addr replace fd42:dead:beef:20::2/64 dev eth1
+      - ip route replace default via 10.20.20.1
+      - ip -6 route replace default via fd42:dead:beef:20::1
     s-router-policy:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
       - ip link set eth1 up
+      - ip addr replace 10.10.0.7/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1000::7/127 dev eth1
       - ip link set eth2 up
-      - ip addr replace 10.10.0.1/31 dev eth1
-      - ip -6 addr replace fd42:dead:beef:1000:0:0:0:1/127 dev eth1
-      - ip addr replace 10.10.0.4/31 dev eth2
-      - ip -6 addr replace fd42:dead:beef:1000:0:0:0:4/127 dev eth2
-      - ip route replace 10.20.10.0/24 via 10.10.0.0
-      - ip route replace 10.20.15.0/24 via 10.10.0.0
-      - ip route replace 10.20.20.0/24 via 10.10.0.0
-      - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:0
-      - ip -6 route replace fd42:dead:beef:15::/64 via fd42:dead:beef:1000:0:0:0:0
-      - ip -6 route replace fd42:dead:beef:20::/64 via fd42:dead:beef:1000:0:0:0:0
+      - ip addr replace 10.10.0.9/31 dev eth2
+      - ip -6 addr replace fd42:dead:beef:1000::9/127 dev eth2
+      - ip link set eth3 up
+      - ip addr replace 10.10.0.11/31 dev eth3
+      - ip -6 addr replace fd42:dead:beef:1000::b/127 dev eth3
+      - ip link set eth4 up
+      - ip addr replace 10.10.0.4/31 dev eth4
+      - ip -6 addr replace fd42:dead:beef:1000:0:0:0:4/127 dev eth4
+      - ip route replace 10.20.10.0/24 via 10.10.0.6
+      - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000::6
+      - ip route replace 10.20.15.0/24 via 10.10.0.8
+      - ip -6 route replace fd42:dead:beef:15::/64 via fd42:dead:beef:1000::8
+      - ip route replace 10.20.20.0/24 via 10.10.0.10
+      - ip -6 route replace fd42:dead:beef:20::/64 via fd42:dead:beef:1000::a
       - ip route replace default via 10.10.0.5
       - ip -6 route replace default via fd42:dead:beef:1000:0:0:0:5
     s-router-upstream-selector:
@@ -88,19 +139,27 @@ topology:
       - ip -6 route replace fd42:dead:beef:10::/64 via 2001:db8:ffff::1
       - ip -6 route replace fd42:dead:beef:15::/64 via 2001:db8:ffff::1
       - ip -6 route replace fd42:dead:beef:20::/64 via 2001:db8:ffff::1
-    client:
-      exec:
-      - ip link set eth1 up
-      - ip addr replace 10.20.20.2/24 dev eth1
-      - ip -6 addr replace fd42:dead:beef:20::2/64 dev eth1
-      - ip route replace default via 10.20.20.1
-      - ip -6 route replace default via fd42:dead:beef:20::1
   links:
   - endpoints:
-    - s-router-access:eth1
+    - s-router-access-mgmt:eth2
+    - client-mgmt:eth1
+  - endpoints:
+    - s-router-access-admin:eth2
+    - client-admin:eth1
+  - endpoints:
+    - s-router-access-clients:eth2
+    - client-clients:eth1
+  - endpoints:
+    - s-router-access-mgmt:eth1
     - s-router-policy:eth1
   - endpoints:
+    - s-router-access-admin:eth1
     - s-router-policy:eth2
+  - endpoints:
+    - s-router-access-clients:eth1
+    - s-router-policy:eth3
+  - endpoints:
+    - s-router-policy:eth4
     - s-router-upstream-selector:eth2
   - endpoints:
     - s-router-core:eth1
@@ -108,6 +167,3 @@ topology:
   - endpoints:
     - s-router-core:eth2
     - isp:eth1
-  - endpoints:
-    - s-router-access:eth2
-    - client:eth1
