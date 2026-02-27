@@ -1,8 +1,9 @@
+# flake.nix
 {
   description = "Containerlab VM host + network renderer";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
 
     network-solver.url = "github:esp0xdeadbeef/network-solver";
     network-compiler.url = "github:esp0xdeadbeef/network-compiler";
@@ -44,11 +45,16 @@
           text = ''
             set -euo pipefail
 
-            INPUT_NIX=${network-compiler}/examples/single-wan/inputs.nix
-            OUTPUT_JSON="output-network-solver.json"
-            TOPO_OUT="fabric.clab.yml"
+            if [ "$#" -lt 1 ]; then
+              echo "Usage: $0 <input.nix> [output-topology.yml]"
+              exit 1
+            fi
 
-            echo "[*] Running solver (GitHub flake)..."
+            INPUT_NIX="$1"
+            OUTPUT_JSON="output-network-solver.json"
+            TOPO_OUT="''${2:-fabric.clab.yml}"
+
+            echo "[*] Running solver..."
             ${solverApp} "$INPUT_NIX" > "$OUTPUT_JSON"
 
             echo "[*] Validating JSON..."
