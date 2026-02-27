@@ -1,9 +1,11 @@
 {
+  description = "Containerlab VM host + network renderer";
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
 
-    network-solver.url = "path:/home/deadbeef/github/network-solver";
-    network-compiler.url = "path:/home/deadbeef/github/network-compiler";
+    network-solver.url = "github:esp0xdeadbeef/network-solver";
+    network-compiler.url = "github:esp0xdeadbeef/network-compiler";
 
     network-solver.inputs.nixpkgs.follows = "nixpkgs";
     network-compiler.inputs.nixpkgs.follows = "nixpkgs";
@@ -18,30 +20,62 @@
       ps.pyyaml
       ps.pandas
     ]);
-  in {
 
-    # ✅ VM restored
+    solverApp =
+      network-solver.apps.${system}.compile-and-solve.program;
+
+  in
+  {
     nixosConfigurations.lab = nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [ ./vm.nix ];
     };
 
-    # ✅ Your apps
     packages.${system} = {
       generate-clab-config =
         pkgs.writeShellApplication {
           name = "generate-clab-config";
-          runtimeInputs = [ pythonEnv ];
+
+          runtimeInputs = [
+            pythonEnv
+            pkgs.jq
+          ];
+
           text = ''
-            exec ${pythonEnv}/bin/python3 ${./generate-clab-config.py} "$@"
+            set -euo pipefail
+
+            INPUT_NIX=${network-compiler}/examples/single-wan/inputs.nix
+            OUTPUT_JSON="output-network-solver.json"
+            TOPO_OUT="fabric.clab.yml"
+
+            echo "[*] Running solver (GitHub flake)..."
+            ${solverApp} "$INPUT_NIX" > "$OUTPUT_JSON"
+
+            echo "[*] Validating JSON..."
+            jq empty "$OUTPUT_JSON"
+
+            echo "[*] Generating Containerlab topology..."
+            exec ${pythonEnv}/bin/python3 ${./generate-clab-config.py} \
+              "$OUTPUT_JSON" "$TOPO_OUT"
           '';
         };
     };
 
-    apps.${system}.generate-clab-config = {
-      type = "app";
-      program =
-        "${self.packages.${system}.generate-clab-config}/bin/generate-clab-config";
+    apps.${system} = {
+      generate-clab-config = {
+        type = "app";
+        program =
+          "${self.packages.${system}.generate-clab-config}/bin/generate-clab-config";
+      };
+
+      default = {
+        type = "app";
+        program =
+          "${self.packages.${system}.generate-clab-config}/bin/generate-clab-config";
+      };
     };
+
+    defaultPackage.${system} =
+      self.packages.${system}.generate-clab-config;
   };
 }
