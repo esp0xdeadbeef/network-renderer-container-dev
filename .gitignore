@@ -2,3 +2,7 @@
 clab-fabric/*
 clab-fabric/
 fabric.clab.yml
+
+# Python
+__pycache__/
+*.pyc
