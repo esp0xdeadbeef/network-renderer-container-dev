@@ -1,1 +1,1 @@
-sudo containerlab deploy -t fabric.clab.yml -d
+containerlab deploy -t fabric.clab.yml -d --reconfigure
