@@ -1,42 +1,46 @@
-# TODO — Renderer
+# ./todo.md
 
-## projection
-- [ ] renderer performs pure projection only
-- [ ] no topology inference
-- [ ] no policy decisions inside renderer
+# TODO – Fix ISP Core / WAN Rendering
 
-## allocation removal
-- [ ] remove `clabgen/p2p_alloc.py`
-- [ ] remove `clabgen/addressing.py`
-- [ ] remove unused allocation helpers
-- [ ] renderer cannot allocate IPs or subnets
+## Critical: WAN Links Not Rendered
 
-## schema
-- [ ] enforce `meta.schemaVersion` guard
-- [ ] fail on unsupported schema versions
-- [ ] keep enterprise-aware traversal only
+- [ ] Stop skipping `kind == "wan"` links in generator
+- [ ] Render WAN links even if only 1 endpoint exists in solver
+- [ ] Introduce synthetic ISP nodes (`isp-a`, `isp-b`)
+- [ ] Attach core WAN interfaces to synthetic ISP nodes
+- [ ] Ensure exactly 2 endpoints per containerlab link (always)
 
-## routing
-- [ ] routes emitted only from solver interfaces
-- [ ] no hardcoded routes
-- [ ] no default-route injection
+## Topology Logic Corrections
 
-## ordering
-- [ ] interface order provided by solver
-- [ ] renderer stops deriving ordering from names
-- [ ] identical input → identical YAML output
+- [ ] Do not silently `continue` on malformed links
+- [ ] Fail fast if:
+  - [ ] Endpoint count is invalid
+  - [ ] Referenced unit does not exist
+  - [ ] Container is missing
+  - [ ] Interface mapping fails
+- [ ] Remove any logic that drops links implicitly
 
-## isolation
-- [ ] fail if `isolated == true` (until implemented)
-- [ ] design isolation realization model
-- [ ] implement namespace / VRF mapping
+## ISP Node Modeling
 
-## node behavior
-- [ ] remove global forwarding defaults
-- [ ] forwarding controlled by solver metadata
+- [ ] Create one containerlab node per upstream ISP per site
+- [ ] Deterministic naming:
+  `esp0xdeadbeef-site-a-isp-a`
+  `esp0xdeadbeef-site-a-isp-b`
+- [ ] Each WAN link must produce:
+  - core ↔ isp-a
+  - core ↔ isp-b
+- [ ] No single-endpoint links ever
 
-## validation
-- [ ] fail on missing routing assumptions
-- [ ] fail on invalid links ↔ nodes references
-- [ ] fail on unknown interface links
-- [ ] errors include attribute path
+## Verification
+
+- [ ] `fabric.clab.yml` must contain:
+  - [ ] ISP nodes
+  - [ ] 2 WAN links per site
+- [ ] `grep isp fabric.clab.yml` shows node + link entries
+- [ ] containerlab deploy succeeds without endpoint errors
+- [ ] No WAN links silently missing
+
+---
+
+Status: Broken  
+Requirement: It must deterministically render all solver WAN links into valid 2-endpoint containerlab links.

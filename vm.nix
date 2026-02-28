@@ -7,7 +7,7 @@
 }:
 
 let
-  generated = import ./bridges-generated.nix { inherit lib; };
+  generated = import ./vm-bridges-generated.nix { inherit lib; };
 
   bridges = generated.bridges;
 

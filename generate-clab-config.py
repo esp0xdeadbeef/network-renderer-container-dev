@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 import sys
+import hashlib
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 sys.path.insert(0, str(Path.cwd()))
 
@@ -21,7 +22,15 @@ from clabgen.solver import (
 
 DEFAULT_SOLVER_JSON = "output-network-solver.json"
 DEFAULT_TOPO_FILE = "fabric.clab.yml"
+DEFAULT_BRIDGES_FILE = "vm-bridges-generated.nix"
 IMAGE = "frrouting/frr:latest"
+MAX_BR_NAME_LEN = 15
+
+
+def short_bridge_name(seed: str) -> str:
+    h = hashlib.sha1(seed.encode()).hexdigest()[:10]
+    name = f"br{h}"
+    return name[:MAX_BR_NAME_LEN]
 
 
 def _emit_iface_routes(iface_obj: Dict[str, Any], version: int, dev: str) -> List[str]:
@@ -54,47 +63,33 @@ def _emit_iface_routes(iface_obj: Dict[str, Any], version: int, dev: str) -> Lis
     return cmds
 
 
-def _is_strict_p2p(link_obj: Any) -> bool:
-    return (
-        isinstance(link_obj, dict)
-        and link_obj.get("kind") == "p2p"
-        and isinstance(link_obj.get("endpoints"), dict)
-        and len(link_obj["endpoints"]) == 2
-    )
+def _iface_order(node_obj: Dict[str, Any]) -> List[str]:
+    ifaces = node_obj.get("interfaces", {})
+    if not isinstance(ifaces, dict):
+        return []
+    return list(ifaces.keys())
 
 
-def _is_wan(link_obj: Any) -> bool:
-    return (
-        isinstance(link_obj, dict)
-        and link_obj.get("kind") == "wan"
-        and isinstance(link_obj.get("endpoints"), dict)
-        and len(link_obj["endpoints"]) == 1
-        and isinstance(link_obj.get("upstream"), str)
-        and bool(link_obj.get("upstream"))
-    )
+def _pick_primary_container(node_obj: Dict[str, Any]) -> str:
+    cs = node_obj.get("containers")
+    if isinstance(cs, list) and cs:
+        for c in cs:
+            if isinstance(c, str) and c:
+                return c
+    return "default"
 
 
-def _eth_index_for_node(
-    node: str,
-    link_key: str,
-    relevant_links: Dict[str, Dict[str, Any]],
-) -> int:
-    idx = 1
-    for lk in sorted(relevant_links.keys()):
-        lo = relevant_links[lk]
-        eps = lo.get("endpoints")
-        if not isinstance(eps, dict) or node not in eps:
-            continue
-        if lk == link_key:
-            return idx
-        idx += 1
-    return 1
+def _clab_name_for_unit(ent: str, site: str, unit: str, node_obj: Dict[str, Any]) -> str:
+    c = _pick_primary_container(node_obj)
+    base = f"{ent}-{site}-{unit}"
+    if c == "default":
+        return base
+    return f"{base}-{c}"
 
 
 def _render_node(
-    node_name: str,
     node_obj: Dict[str, Any],
-    relevant_links: Dict[str, Dict[str, Any]],
+    eth_map: Dict[str, int],
 ) -> Dict[str, Any]:
     exec_cmds: List[str] = [
         "sysctl -w net.ipv4.ip_forward=1",
@@ -105,46 +100,74 @@ def _render_node(
     if not isinstance(interfaces, dict):
         return {"exec": exec_cmds}
 
-    eth_idx = 1
-    for link_key in sorted(relevant_links.keys()):
-        link_obj = relevant_links[link_key]
-        eps = link_obj.get("endpoints")
-        if not isinstance(eps, dict) or node_name not in eps:
-            continue
+    for link_key in interfaces.keys():
+        if link_key not in eth_map:
+            fail(f"Interface mapping failed for link '{link_key}'", context=node_obj)
+
+        eth_idx = eth_map[link_key]
+        dev = f"eth{eth_idx}"
 
         iface_obj = interfaces.get(link_key)
         if not isinstance(iface_obj, dict):
-            continue
+            fail(f"Invalid interface object for link '{link_key}'", context=node_obj)
 
-        dev = f"eth{eth_idx}"
         exec_cmds.append(f"ip link set {dev} up")
 
         addr4 = iface_obj.get("addr4")
         addr6 = iface_obj.get("addr6")
+        ll6 = iface_obj.get("ll6")
 
         if isinstance(addr4, str) and addr4:
             exec_cmds.append(f"ip addr replace {addr4} dev {dev}")
         if isinstance(addr6, str) and addr6:
             exec_cmds.append(f"ip -6 addr replace {addr6} dev {dev}")
+        if isinstance(ll6, str) and ll6:
+            exec_cmds.append(f"ip -6 addr replace {ll6} dev {dev}")
 
         exec_cmds.extend(_emit_iface_routes(iface_obj, 4, dev))
         exec_cmds.extend(_emit_iface_routes(iface_obj, 6, dev))
 
-        eth_idx += 1
-
     return {"exec": exec_cmds}
+
+
+def _render_synthetic_isp_node() -> Dict[str, Any]:
+    return {
+        "exec": [
+            "sysctl -w net.ipv4.ip_forward=1",
+            "sysctl -w net.ipv6.conf.all.forwarding=1",
+            "ip link set eth1 up",
+        ]
+    }
+
+
+def write_bridges_file(bridges: Set[str], path: Path) -> None:
+    bridge_list = sorted(bridges)
+
+    lines: List[str] = []
+    lines.append("{ lib, ... }:")
+    lines.append("{")
+    lines.append("  bridges = [")
+    for b in bridge_list:
+        lines.append(f'    "{b}"')
+    lines.append("  ];")
+    lines.append("}")
+
+    path.write_text("\n".join(lines) + "\n")
 
 
 def main() -> None:
     solver_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(DEFAULT_SOLVER_JSON)
     topo_path = Path(sys.argv[2]) if len(sys.argv) > 2 else Path(DEFAULT_TOPO_FILE)
+    bridges_path = (
+        Path(sys.argv[3]) if len(sys.argv) > 3 else Path(DEFAULT_BRIDGES_FILE)
+    )
 
     data = load_solver(solver_path)
     sites = extract_enterprise_sites(data)
 
     rendered_nodes: Dict[str, Any] = {}
     rendered_links: List[Dict[str, Any]] = []
-    isp_eth_next: Dict[str, int] = {}
+    bridge_names: Set[str] = set()
 
     for ent_name, site_name, site in sites:
         site_ctx = {"enterprise": ent_name, "site": site_name, "siteObj": site}
@@ -152,103 +175,144 @@ def main() -> None:
         validate_site_invariants(site, context=site_ctx)
         validate_routing_assumptions(site, context=site_ctx)
 
-        nodes = site.get("nodes", {})
-        links = site.get("links", {})
+        nodes_any = site.get("nodes")
+        links_any = site.get("links")
 
-        if not isinstance(nodes, dict) or not isinstance(links, dict):
-            fail("Invalid solver structure: nodes/links missing", context=site_ctx)
+        if not isinstance(nodes_any, dict):
+            fail("Invalid solver structure: site.nodes missing", context=site_ctx)
+        if not isinstance(links_any, dict):
+            fail("Invalid solver structure: site.links missing", context=site_ctx)
 
-        # remove isolated nodes (access, core)
-        filtered_nodes = {
-            name: obj
-            for name, obj in nodes.items()
-            if not bool(obj.get("isolated"))
+        nodes: Dict[str, Dict[str, Any]] = {}
+        for n, o in nodes_any.items():
+            if not isinstance(n, str) or not isinstance(o, dict):
+                fail(f"Invalid node definition at '{n}'", context=site_ctx)
+            nodes[n] = o
+
+        links: Dict[str, Dict[str, Any]] = {}
+        for lk, lo in links_any.items():
+            if not isinstance(lk, str) or not isinstance(lo, dict):
+                fail(f"Invalid link definition at '{lk}'", context=site_ctx)
+            links[lk] = lo
+
+        unit_to_clab: Dict[str, str] = {
+            unit: _clab_name_for_unit(ent_name, site_name, unit, node_obj)
+            for unit, node_obj in nodes.items()
         }
 
-        debug = site.get("_debug", {})
-        compiler_ir = debug.get("compilerIR", {})
-        upstreams = compiler_ir.get("upstreams", {})
-        cores = upstreams.get("cores", {})
+        eth_index: Dict[str, Dict[str, int]] = {u: {} for u in nodes.keys()}
+        isp_nodes_for_site: Set[str] = set()
 
-        for _, upstream_list in cores.items():
-            if not isinstance(upstream_list, list):
-                continue
-            for up in upstream_list:
-                if not isinstance(up, dict):
-                    continue
-                upstream_name = up.get("name")
-                if not isinstance(upstream_name, str) or not upstream_name:
-                    continue
+        # Assign interface indices deterministically
+        for link_key, link_obj in sorted(links.items()):
+            eps = link_obj.get("endpoints")
+            if not isinstance(eps, dict):
+                fail(f"Link '{link_key}' missing endpoints", context=site_ctx)
 
-                isp_full = f"{ent_name}-{site_name}-isp-{upstream_name}"
-                if isp_full not in rendered_nodes:
-                    rendered_nodes[isp_full] = {
-                        "exec": [
-                            "sysctl -w net.ipv4.ip_forward=1",
-                            "sysctl -w net.ipv6.conf.all.forwarding=1",
-                        ]
-                    }
-                    isp_eth_next[isp_full] = 1
+            for unit in eps.keys():
+                if unit not in nodes:
+                    fail(f"Link '{link_key}' references unknown unit '{unit}'", context=site_ctx)
 
-        relevant_links: Dict[str, Dict[str, Any]] = {}
-        for lk, lo in links.items():
-            if not (_is_strict_p2p(lo) or _is_wan(lo)):
-                continue
+                if link_key not in nodes[unit].get("interfaces", {}):
+                    fail(
+                        f"Link '{link_key}' missing interface mapping on unit '{unit}'",
+                        context=site_ctx,
+                    )
 
-            eps = lo.get("endpoints", {})
-            if any(node in filtered_nodes for node in eps.keys()):
-                relevant_links[lk] = lo
+                if link_key not in eth_index[unit]:
+                    eth_index[unit][link_key] = len(eth_index[unit]) + 1
 
-        for node_name in sorted(filtered_nodes.keys()):
-            node_obj = filtered_nodes[node_name]
-            rendered_nodes[f"{ent_name}-{site_name}-{node_name}"] = _render_node(
-                node_name, node_obj, relevant_links
+        # Render regular nodes
+        for unit in sorted(nodes.keys()):
+            clab_name = unit_to_clab[unit]
+            rendered_nodes[clab_name] = _render_node(
+                nodes[unit],
+                eth_index.get(unit, {}),
             )
 
-        for link_key in sorted(relevant_links.keys()):
-            link_obj = relevant_links[link_key]
+        # Render links
+        for link_key, link_obj in sorted(links.items()):
+            eps = link_obj.get("endpoints")
+            kind = link_obj.get("kind")
 
-            if _is_strict_p2p(link_obj):
-                eps = link_obj["endpoints"]
-                a, b = sorted(eps.keys())
-                if a not in filtered_nodes or b not in filtered_nodes:
-                    continue
+            if not isinstance(eps, dict):
+                fail(f"Link '{link_key}' missing endpoints", context=site_ctx)
+
+            seed = f"{ent_name}-{site_name}-{link_key}"
+            bridge_name = short_bridge_name(seed)
+            bridge_names.add(bridge_name)
+
+            if kind == "wan":
+                if len(eps) != 1:
+                    fail(
+                        f"WAN link '{link_key}' must have exactly 1 solver endpoint",
+                        context=site_ctx,
+                    )
+
+                unit = next(iter(eps.keys()))
+                if unit not in unit_to_clab:
+                    fail(f"WAN link '{link_key}' unknown unit '{unit}'", context=site_ctx)
+
+                if link_key not in eth_index[unit]:
+                    fail(
+                        f"WAN link '{link_key}' missing interface index for '{unit}'",
+                        context=site_ctx,
+                    )
+
+                eth = eth_index[unit][link_key]
+                core_ref = f"{unit_to_clab[unit]}:eth{eth}"
+
+                # Determine ISP name deterministically per site
+                isp_index = len(isp_nodes_for_site)
+                isp_suffix = chr(ord("a") + isp_index)
+                isp_name = f"{ent_name}-{site_name}-isp-{isp_suffix}"
+
+                if isp_name not in rendered_nodes:
+                    rendered_nodes[isp_name] = _render_synthetic_isp_node()
+                    isp_nodes_for_site.add(isp_name)
+
+                isp_ref = f"{isp_name}:eth1"
 
                 rendered_links.append(
                     {
-                        "endpoints": [
-                            f"{ent_name}-{site_name}-{a}:eth{_eth_index_for_node(a, link_key, relevant_links)}",
-                            f"{ent_name}-{site_name}-{b}:eth{_eth_index_for_node(b, link_key, relevant_links)}",
-                        ]
+                        "endpoints": [core_ref, isp_ref],
+                        "labels": {
+                            "clab.link.type": "bridge",
+                            "clab.link.bridge": bridge_name,
+                        },
                     }
                 )
-                continue
+            else:
+                if len(eps) != 2:
+                    fail(
+                        f"Link '{link_key}' must have exactly 2 endpoints",
+                        context=site_ctx,
+                    )
 
-            if _is_wan(link_obj):
-                upstream = link_obj["upstream"]
-                eps = link_obj["endpoints"]
-                core_node = next(iter(eps.keys()))
+                endpoint_refs: List[str] = []
 
-                if core_node not in filtered_nodes:
-                    continue
+                for unit in sorted(eps.keys()):
+                    if unit not in unit_to_clab:
+                        fail(f"Link '{link_key}' unknown unit '{unit}'", context=site_ctx)
 
-                isp_full = f"{ent_name}-{site_name}-isp-{upstream}"
-                core_full = f"{ent_name}-{site_name}-{core_node}"
+                    if link_key not in eth_index[unit]:
+                        fail(
+                            f"Link '{link_key}' missing interface index for '{unit}'",
+                            context=site_ctx,
+                        )
 
-                isp_eth = isp_eth_next.get(isp_full, 1)
-                isp_eth_next[isp_full] = isp_eth + 1
-
-                core_eth = _eth_index_for_node(core_node, link_key, relevant_links)
+                    eth = eth_index[unit][link_key]
+                    endpoint_refs.append(f"{unit_to_clab[unit]}:eth{eth}")
 
                 rendered_links.append(
                     {
-                        "endpoints": [
-                            f"{core_full}:eth{core_eth}",
-                            f"{isp_full}:eth{isp_eth}",
-                        ]
+                        "endpoints": endpoint_refs,
+                        "labels": {
+                            "clab.link.type": "bridge",
+                            "clab.link.bridge": bridge_name,
+                        },
                     }
                 )
-                continue
 
     topology = {
         "name": "fabric",
@@ -260,7 +324,6 @@ def main() -> None:
                 "sysctls": {
                     "net.ipv4.ip_forward": "1",
                     "net.ipv6.conf.all.forwarding": "1",
-                    "net.ipv4.conf.default.rp_filter": "0",
                 },
             },
             "nodes": rendered_nodes,
@@ -270,6 +333,8 @@ def main() -> None:
 
     with topo_path.open("w") as f:
         yaml.dump(topology, f, sort_keys=False)
+
+    write_bridges_file(bridge_names, bridges_path)
 
 
 if __name__ == "__main__":

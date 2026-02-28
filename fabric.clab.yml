@@ -7,16 +7,38 @@ topology:
     sysctls:
       net.ipv4.ip_forward: '1'
       net.ipv6.conf.all.forwarding: '1'
-      net.ipv4.conf.default.rp_filter: '0'
   nodes:
-    esp0xdeadbeef-site-a-isp-isp-a:
+    esp0xdeadbeef-site-a-s-router-access-isolated-0:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
-    esp0xdeadbeef-site-a-isp-isp-b:
+      - ip link set eth1 up
+      - ip addr replace 10.10.0.0/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1000:0:0:0:0/127 dev eth1
+      - ip route replace 0.0.0.0/0 via 10.10.0.1 dev eth1
+      - ip -6 route replace ::/0 via fd42:dead:beef:1000:0:0:0:1 dev eth1
+    esp0xdeadbeef-site-a-s-router-core-isolated-0:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
+      - ip link set eth1 up
+      - ip addr replace 10.10.0.2/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1000:0:0:0:2/127 dev eth1
+      - ip route replace 10.20.10.0/24 via 10.10.0.3 dev eth1
+      - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:3
+        dev eth1
+      - ip link set eth2 up
+      - ip addr replace 10.19.0.100/32 dev eth2
+      - ip -6 addr replace fd42:dead:beef:1900:0:0:0:64/128 dev eth2
+      - ip -6 addr replace fe80:0:0:0:0:0:0:1/128 dev eth2
+      - ip route replace 0.0.0.0/0 dev eth2
+      - ip -6 route replace ::/0 dev eth2
+      - ip link set eth3 up
+      - ip addr replace 10.19.0.101/32 dev eth3
+      - ip -6 addr replace fd42:dead:beef:1900:0:0:0:65/128 dev eth3
+      - ip -6 addr replace fe80:0:0:0:0:0:0:2/128 dev eth3
+      - ip route replace 0.0.0.0/0 dev eth3
+      - ip -6 route replace ::/0 dev eth3
     esp0xdeadbeef-site-a-s-router-policy:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
@@ -47,14 +69,47 @@ topology:
       - ip route replace 10.20.10.0/24 via 10.10.0.4 dev eth2
       - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:4
         dev eth2
-    esp0xdeadbeef-site-b-isp-isp-a:
+    esp0xdeadbeef-site-a-isp-a:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
-    esp0xdeadbeef-site-b-isp-isp-b:
+      - ip link set eth1 up
+    esp0xdeadbeef-site-a-isp-b:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
+      - ip link set eth1 up
+    esp0xdeadbeef-site-b-s-router-access-isolated-0:
+      exec:
+      - sysctl -w net.ipv4.ip_forward=1
+      - sysctl -w net.ipv6.conf.all.forwarding=1
+      - ip link set eth1 up
+      - ip addr replace 10.11.0.0/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1100:0:0:0:0/127 dev eth1
+      - ip route replace 0.0.0.0/0 via 10.11.0.1 dev eth1
+      - ip -6 route replace ::/0 via fd42:dead:beef:1100:0:0:0:1 dev eth1
+    esp0xdeadbeef-site-b-s-router-core-isolated-0:
+      exec:
+      - sysctl -w net.ipv4.ip_forward=1
+      - sysctl -w net.ipv6.conf.all.forwarding=1
+      - ip link set eth1 up
+      - ip addr replace 10.11.0.2/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1100:0:0:0:2/127 dev eth1
+      - ip route replace 10.30.10.0/24 via 10.11.0.3 dev eth1
+      - ip -6 route replace fd42:dead:beef:11::/64 via fd42:dead:beef:1100:0:0:0:3
+        dev eth1
+      - ip link set eth2 up
+      - ip addr replace 10.29.0.100/32 dev eth2
+      - ip -6 addr replace fd42:dead:beef:2900:0:0:0:64/128 dev eth2
+      - ip -6 addr replace fe80:0:0:0:0:0:0:1/128 dev eth2
+      - ip route replace 0.0.0.0/0 dev eth2
+      - ip -6 route replace ::/0 dev eth2
+      - ip link set eth3 up
+      - ip addr replace 10.29.0.101/32 dev eth3
+      - ip -6 addr replace fd42:dead:beef:2900:0:0:0:65/128 dev eth3
+      - ip -6 addr replace fe80:0:0:0:0:0:0:2/128 dev eth3
+      - ip route replace 0.0.0.0/0 dev eth3
+      - ip -6 route replace ::/0 dev eth3
     esp0xdeadbeef-site-b-s-router-policy:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
@@ -85,10 +140,74 @@ topology:
       - ip route replace 10.30.10.0/24 via 10.11.0.4 dev eth2
       - ip -6 route replace fd42:dead:beef:11::/64 via fd42:dead:beef:1100:0:0:0:4
         dev eth2
+    esp0xdeadbeef-site-b-isp-a:
+      exec:
+      - sysctl -w net.ipv4.ip_forward=1
+      - sysctl -w net.ipv6.conf.all.forwarding=1
+      - ip link set eth1 up
+    esp0xdeadbeef-site-b-isp-b:
+      exec:
+      - sysctl -w net.ipv4.ip_forward=1
+      - sysctl -w net.ipv6.conf.all.forwarding=1
+      - ip link set eth1 up
   links:
+  - endpoints:
+    - esp0xdeadbeef-site-a-s-router-access-isolated-0:eth1
+    - esp0xdeadbeef-site-a-s-router-policy:eth1
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: br749a740b5a
+  - endpoints:
+    - esp0xdeadbeef-site-a-s-router-core-isolated-0:eth1
+    - esp0xdeadbeef-site-a-s-router-upstream-selector:eth1
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: brc7141be663
   - endpoints:
     - esp0xdeadbeef-site-a-s-router-policy:eth2
     - esp0xdeadbeef-site-a-s-router-upstream-selector:eth2
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: br26ec11ee85
+  - endpoints:
+    - esp0xdeadbeef-site-a-s-router-core-isolated-0:eth2
+    - esp0xdeadbeef-site-a-isp-a:eth1
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: br7e74d8e427
+  - endpoints:
+    - esp0xdeadbeef-site-a-s-router-core-isolated-0:eth3
+    - esp0xdeadbeef-site-a-isp-b:eth1
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: bre2ce62f969
+  - endpoints:
+    - esp0xdeadbeef-site-b-s-router-access-isolated-0:eth1
+    - esp0xdeadbeef-site-b-s-router-policy:eth1
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: brc4d3dcbeac
+  - endpoints:
+    - esp0xdeadbeef-site-b-s-router-core-isolated-0:eth1
+    - esp0xdeadbeef-site-b-s-router-upstream-selector:eth1
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: br3499ea248c
   - endpoints:
     - esp0xdeadbeef-site-b-s-router-policy:eth2
     - esp0xdeadbeef-site-b-s-router-upstream-selector:eth2
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: br9182b4bf99
+  - endpoints:
+    - esp0xdeadbeef-site-b-s-router-core-isolated-0:eth2
+    - esp0xdeadbeef-site-b-isp-a:eth1
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: br0d43c69b49
+  - endpoints:
+    - esp0xdeadbeef-site-b-s-router-core-isolated-0:eth3
+    - esp0xdeadbeef-site-b-isp-b:eth1
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: br6711e73769
