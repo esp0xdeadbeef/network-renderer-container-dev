@@ -1,148 +1,316 @@
 {
   "meta": {
-    "schemaVersion": 1,
-    "solver": "network-solver"
+    "solver": {
+      "name": "network-solver",
+      "schemaVersion": 2
+    }
   },
   "sites": {
     "esp0xdeadbeef": {
       "site-a": {
+        "_debug": {
+          "compilerIR": {
+            "addressPools": {
+              "local": {
+                "ipv4": "10.19.0.0/24",
+                "ipv6": "fd42:dead:beef:1900::/118"
+              },
+              "p2p": {
+                "ipv4": "10.10.0.0/24",
+                "ipv6": "fd42:dead:beef:1000::/118"
+              }
+            },
+            "attachment": [
+              {
+                "segment": "tenants:mgmt",
+                "unit": "s-router-access"
+              }
+            ],
+            "communicationContract": {
+              "allowedRelations": [],
+              "nat": {
+                "enabled": false,
+                "ingress": []
+              }
+            },
+            "domains": {
+              "tenants": [
+                {
+                  "ipv4": "10.20.10.0/24",
+                  "ipv6": "fd42:dead:beef:10::/64",
+                  "name": "mgmt"
+                }
+              ]
+            },
+            "routerLoopbacks": {
+              "s-router-access": {
+                "ipv4": "10.19.0.1",
+                "ipv6": "fd42:dead:beef:1900:0:0:0:1"
+              },
+              "s-router-core": {
+                "ipv4": "10.19.0.2",
+                "ipv6": "fd42:dead:beef:1900:0:0:0:2"
+              },
+              "s-router-policy": {
+                "ipv4": "10.19.0.3",
+                "ipv6": "fd42:dead:beef:1900:0:0:0:3"
+              },
+              "s-router-upstream-selector": {
+                "ipv4": "10.19.0.4",
+                "ipv6": "fd42:dead:beef:1900:0:0:0:4"
+              }
+            },
+            "transit": {
+              "adjacencies": [
+                {
+                  "endpoints": [
+                    {
+                      "local": {
+                        "ipv4": "10.10.0.1",
+                        "ipv6": "fd42:dead:beef:1000:0:0:0:1"
+                      },
+                      "unit": "s-router-core"
+                    },
+                    {
+                      "local": {
+                        "ipv4": "10.10.0.2",
+                        "ipv6": "fd42:dead:beef:1000:0:0:0:2"
+                      },
+                      "unit": "s-router-upstream-selector"
+                    }
+                  ]
+                },
+                {
+                  "endpoints": [
+                    {
+                      "local": {
+                        "ipv4": "10.10.0.3",
+                        "ipv6": "fd42:dead:beef:1000:0:0:0:3"
+                      },
+                      "unit": "s-router-upstream-selector"
+                    },
+                    {
+                      "local": {
+                        "ipv4": "10.10.0.4",
+                        "ipv6": "fd42:dead:beef:1000:0:0:0:4"
+                      },
+                      "unit": "s-router-policy"
+                    }
+                  ]
+                },
+                {
+                  "endpoints": [
+                    {
+                      "local": {
+                        "ipv4": "10.10.0.5",
+                        "ipv6": "fd42:dead:beef:1000:0:0:0:5"
+                      },
+                      "unit": "s-router-policy"
+                    },
+                    {
+                      "local": {
+                        "ipv4": "10.10.0.6",
+                        "ipv6": "fd42:dead:beef:1000:0:0:0:6"
+                      },
+                      "unit": "s-router-access"
+                    }
+                  ]
+                }
+              ],
+              "ordering": [
+                [
+                  "s-router-core",
+                  "s-router-upstream-selector"
+                ],
+                [
+                  "s-router-upstream-selector",
+                  "s-router-policy"
+                ],
+                [
+                  "s-router-policy",
+                  "s-router-access"
+                ]
+              ]
+            },
+            "transport": {
+              "overlays": []
+            },
+            "units": {
+              "s-router-access": {
+                "containers": [
+                  "isolated-0"
+                ],
+                "isolated": true
+              },
+              "s-router-core": {
+                "containers": [
+                  "isolated-0"
+                ],
+                "isolated": true
+              },
+              "s-router-policy": {
+                "containers": [
+                  "default"
+                ],
+                "isolated": false
+              },
+              "s-router-upstream-selector": {
+                "containers": [
+                  "default"
+                ],
+                "isolated": false
+              }
+            },
+            "upstreams": {
+              "cores": {
+                "s-router-core": [
+                  {
+                    "name": "isp-a"
+                  },
+                  {
+                    "name": "isp-b"
+                  }
+                ]
+              },
+              "multiWan": true
+            }
+          }
+        },
+        "_enforcement": {
+          "owner": "s-router-policy",
+          "rules": []
+        },
+        "_nat": {
+          "ingress": [],
+          "mode": "none",
+          "owner": "s-router-core"
+        },
         "_routingMaps": {
-          "assumptions": {
-            "core": "s-router-core",
-            "policy": "s-router-policy",
-            "singleAccess": "s-router-access",
-            "upstreamSelector": null
-          },
           "defaults": {
             "default4": "0.0.0.0/0",
             "default6": "::/0"
           },
+          "enforcement": {
+            "owner": "s-router-policy",
+            "rules": []
+          },
           "mode": "static",
-          "tenants": {
-            "ipv4": [
-              "10.20.10.0/24"
+          "nat": {
+            "ingress": [],
+            "mode": "none",
+            "owner": "s-router-core"
+          },
+          "traversal": {
+            "accessUnitHint": "s-router-access",
+            "chain": [
+              "s-router-core",
+              "s-router-upstream-selector",
+              "s-router-policy",
+              "s-router-access"
             ],
-            "ipv6": [
-              "fd42:dead:beef:10::/64"
-            ]
-          }
-        },
-        "compilerIR": {
-          "addressPools": {
-            "local": {
-              "ipv4": "10.19.0.0/24",
-              "ipv6": "fd42:dead:beef:1900::/118"
-            },
-            "p2p": {
-              "ipv4": "10.10.0.0/24",
-              "ipv6": "fd42:dead:beef:1000::/118"
-            }
-          },
-          "attachment": [
-            {
-              "segment": "tenants:mgmt",
-              "unit": "s-router-access"
-            }
-          ],
-          "communicationContract": {
-            "allowedRelations": [],
-            "nat": {
-              "ingress": []
-            }
-          },
-          "domains": {
-            "tenants": [
+            "coreUnitHint": "s-router-core",
+            "edges": [
               {
-                "ipv4": "10.20.10.0/24",
-                "ipv6": "fd42:dead:beef:10::/64",
-                "name": "mgmt"
-              }
-            ]
-          },
-          "routerLoopbacks": {
-            "s-router-access": {
-              "ipv4": "10.19.0.1",
-              "ipv6": "fd42:dead:beef:1900:0:0:0:1"
-            },
-            "s-router-core": {
-              "ipv4": "10.19.0.2",
-              "ipv6": "fd42:dead:beef:1900:0:0:0:2"
-            },
-            "s-router-policy": {
-              "ipv4": "10.19.0.3",
-              "ipv6": "fd42:dead:beef:1900:0:0:0:3"
-            }
-          },
-          "transit": {
-            "adjacencies": [
-              {
-                "endpoints": [
-                  {
-                    "local": {
-                      "ipv4": "10.10.0.1",
-                      "ipv6": "fd42:dead:beef:1000:0:0:0:1"
-                    },
-                    "unit": "s-router-core"
-                  },
-                  {
-                    "local": {
-                      "ipv4": "10.10.0.2",
-                      "ipv6": "fd42:dead:beef:1000:0:0:0:2"
-                    },
-                    "unit": "s-router-policy"
-                  }
-                ]
+                "a": "s-router-core",
+                "b": "s-router-upstream-selector"
               },
               {
-                "endpoints": [
-                  {
-                    "local": {
-                      "ipv4": "10.10.0.3",
-                      "ipv6": "fd42:dead:beef:1000:0:0:0:3"
-                    },
-                    "unit": "s-router-policy"
-                  },
-                  {
-                    "local": {
-                      "ipv4": "10.10.0.4",
-                      "ipv6": "fd42:dead:beef:1000:0:0:0:4"
-                    },
-                    "unit": "s-router-access"
-                  }
-                ]
+                "a": "s-router-upstream-selector",
+                "b": "s-router-policy"
+              },
+              {
+                "a": "s-router-policy",
+                "b": "s-router-access"
               }
             ],
-            "ordering": [
-              [
+            "inferred": {
+              "s-router-access": "access",
+              "s-router-core": "core",
+              "s-router-policy": "policy",
+              "s-router-upstream-selector": "upstream-selector"
+            },
+            "mode": "ordering-chain"
+          }
+        },
+        "_traversal": {
+          "accessUnitHint": "s-router-access",
+          "chain": [
+            "s-router-core",
+            "s-router-upstream-selector",
+            "s-router-policy",
+            "s-router-access"
+          ],
+          "coreUnitHint": "s-router-core",
+          "edges": [
+            {
+              "a": "s-router-core",
+              "b": "s-router-upstream-selector"
+            },
+            {
+              "a": "s-router-upstream-selector",
+              "b": "s-router-policy"
+            },
+            {
+              "a": "s-router-policy",
+              "b": "s-router-access"
+            }
+          ],
+          "inferred": {
+            "s-router-access": "access",
+            "s-router-core": "core",
+            "s-router-policy": "policy",
+            "s-router-upstream-selector": "upstream-selector"
+          },
+          "mode": "ordering-chain"
+        },
+        "_verification": {
+          "solver": {
+            "nat": {
+              "ingress": [],
+              "mode": "none",
+              "owner": "s-router-core"
+            },
+            "traversal": {
+              "accessUnitHint": "s-router-access",
+              "chain": [
                 "s-router-core",
-                "s-router-policy"
-              ],
-              [
+                "s-router-upstream-selector",
                 "s-router-policy",
                 "s-router-access"
-              ]
-            ]
-          },
-          "units": {
-            "s-router-access": {
-              "containers": [
-                "isolated-0"
               ],
-              "isolated": true
-            },
-            "s-router-core": {
-              "containers": [
-                "isolated-0"
+              "coreUnitHint": "s-router-core",
+              "edges": [
+                {
+                  "a": "s-router-core",
+                  "b": "s-router-upstream-selector"
+                },
+                {
+                  "a": "s-router-upstream-selector",
+                  "b": "s-router-policy"
+                },
+                {
+                  "a": "s-router-policy",
+                  "b": "s-router-access"
+                }
               ],
-              "isolated": true
-            },
-            "s-router-policy": {
-              "containers": [
-                "default"
-              ],
-              "isolated": false
+              "inferred": {
+                "s-router-access": "access",
+                "s-router-core": "core",
+                "s-router-policy": "policy",
+                "s-router-upstream-selector": "upstream-selector"
+              },
+              "mode": "ordering-chain"
             }
           }
+        },
+        "domains": {
+          "tenants": [
+            {
+              "ipv4": "10.20.10.0/24",
+              "ipv6": "fd42:dead:beef:10::/64",
+              "name": "mgmt"
+            }
+          ]
         },
         "links": {
           "p2p-s-router-access-s-router-policy": {
@@ -158,22 +326,68 @@
             },
             "kind": "p2p"
           },
-          "p2p-s-router-core-s-router-policy": {
+          "p2p-s-router-core-s-router-upstream-selector": {
             "endpoints": {
               "s-router-core": {
                 "addr4": "10.10.0.2/31",
                 "addr6": "fd42:dead:beef:1000:0:0:0:2/127"
               },
-              "s-router-policy": {
+              "s-router-upstream-selector": {
                 "addr4": "10.10.0.3/31",
                 "addr6": "fd42:dead:beef:1000:0:0:0:3/127"
               }
             },
             "kind": "p2p"
+          },
+          "p2p-s-router-policy-s-router-upstream-selector": {
+            "endpoints": {
+              "s-router-policy": {
+                "addr4": "10.10.0.4/31",
+                "addr6": "fd42:dead:beef:1000:0:0:0:4/127"
+              },
+              "s-router-upstream-selector": {
+                "addr4": "10.10.0.5/31",
+                "addr6": "fd42:dead:beef:1000:0:0:0:5/127"
+              }
+            },
+            "kind": "p2p"
+          },
+          "wan-s-router-core-isp-a": {
+            "carrier": "wan",
+            "endpoints": {
+              "s-router-core": {
+                "addr4": "10.19.0.100/32",
+                "addr6": "fd42:dead:beef:1900:0:0:0:64/128",
+                "export": true,
+                "gateway": true,
+                "ll6": "fe80:0:0:0:0:0:0:1/128"
+              }
+            },
+            "kind": "wan",
+            "overlay": null,
+            "upstream": "isp-a"
+          },
+          "wan-s-router-core-isp-b": {
+            "carrier": "wan",
+            "endpoints": {
+              "s-router-core": {
+                "addr4": "10.19.0.101/32",
+                "addr6": "fd42:dead:beef:1900:0:0:0:65/128",
+                "export": true,
+                "gateway": true,
+                "ll6": "fe80:0:0:0:0:0:0:2/128"
+              }
+            },
+            "kind": "wan",
+            "overlay": null,
+            "upstream": "isp-b"
           }
         },
         "nodes": {
           "s-router-access": {
+            "containers": [
+              "isolated-0"
+            ],
             "interfaces": {
               "p2p-s-router-access-s-router-policy": {
                 "acceptRA": false,
@@ -185,6 +399,8 @@
                 "export": false,
                 "gateway": false,
                 "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
                 "ra6Prefixes": [],
                 "routes4": [
                   {
@@ -198,14 +414,20 @@
                     "via6": "fd42:dead:beef:1000:0:0:0:1"
                   }
                 ],
-                "tenant": null
+                "tenant": null,
+                "upstream": null
               }
             },
-            "role": "access"
+            "isolated": true,
+            "role": "access",
+            "routingDomain": "vrf-s-router-access-isolated"
           },
           "s-router-core": {
+            "containers": [
+              "isolated-0"
+            ],
             "interfaces": {
-              "p2p-s-router-core-s-router-policy": {
+              "p2p-s-router-core-s-router-upstream-selector": {
                 "acceptRA": false,
                 "addr4": "10.10.0.2/31",
                 "addr6": "fd42:dead:beef:1000:0:0:0:2/127",
@@ -215,15 +437,85 @@
                 "export": false,
                 "gateway": false,
                 "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
                 "ra6Prefixes": [],
-                "routes4": [],
-                "routes6": [],
-                "tenant": null
+                "routes4": [
+                  {
+                    "dst": "10.20.10.0/24",
+                    "via4": "10.10.0.3"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "fd42:dead:beef:10::/64",
+                    "via6": "fd42:dead:beef:1000:0:0:0:3"
+                  }
+                ],
+                "tenant": null,
+                "upstream": null
+              },
+              "wan-s-router-core-isp-a": {
+                "acceptRA": false,
+                "addr4": "10.19.0.100/32",
+                "addr6": "fd42:dead:beef:1900:0:0:0:64/128",
+                "addr6Public": null,
+                "carrier": "wan",
+                "dhcp": false,
+                "export": true,
+                "gateway": true,
+                "kind": "wan",
+                "ll6": "fe80:0:0:0:0:0:0:1/128",
+                "overlay": null,
+                "ra6Prefixes": [],
+                "routes4": [
+                  {
+                    "dst": "0.0.0.0/0"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "::/0"
+                  }
+                ],
+                "tenant": null,
+                "upstream": "isp-a"
+              },
+              "wan-s-router-core-isp-b": {
+                "acceptRA": false,
+                "addr4": "10.19.0.101/32",
+                "addr6": "fd42:dead:beef:1900:0:0:0:65/128",
+                "addr6Public": null,
+                "carrier": "wan",
+                "dhcp": false,
+                "export": true,
+                "gateway": true,
+                "kind": "wan",
+                "ll6": "fe80:0:0:0:0:0:0:2/128",
+                "overlay": null,
+                "ra6Prefixes": [],
+                "routes4": [
+                  {
+                    "dst": "0.0.0.0/0"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "::/0"
+                  }
+                ],
+                "tenant": null,
+                "upstream": "isp-b"
               }
             },
-            "role": "core"
+            "isolated": true,
+            "role": "core",
+            "routingDomain": "vrf-s-router-core-isolated"
           },
           "s-router-policy": {
+            "containers": [
+              "default"
+            ],
             "interfaces": {
               "p2p-s-router-access-s-router-policy": {
                 "acceptRA": false,
@@ -235,6 +527,8 @@
                 "export": false,
                 "gateway": false,
                 "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
                 "ra6Prefixes": [],
                 "routes4": [
                   {
@@ -248,9 +542,48 @@
                     "via6": "fd42:dead:beef:1000:0:0:0:0"
                   }
                 ],
-                "tenant": null
+                "tenant": null,
+                "upstream": null
               },
-              "p2p-s-router-core-s-router-policy": {
+              "p2p-s-router-policy-s-router-upstream-selector": {
+                "acceptRA": false,
+                "addr4": "10.10.0.4/31",
+                "addr6": "fd42:dead:beef:1000:0:0:0:4/127",
+                "addr6Public": null,
+                "carrier": "lan",
+                "dhcp": false,
+                "export": false,
+                "gateway": false,
+                "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
+                "ra6Prefixes": [],
+                "routes4": [
+                  {
+                    "dst": "0.0.0.0/0",
+                    "via4": "10.10.0.5"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "::/0",
+                    "via6": "fd42:dead:beef:1000:0:0:0:5"
+                  }
+                ],
+                "tenant": null,
+                "upstream": null
+              }
+            },
+            "isolated": false,
+            "role": "policy",
+            "routingDomain": "vrf-default"
+          },
+          "s-router-upstream-selector": {
+            "containers": [
+              "default"
+            ],
+            "interfaces": {
+              "p2p-s-router-core-s-router-upstream-selector": {
                 "acceptRA": false,
                 "addr4": "10.10.0.3/31",
                 "addr6": "fd42:dead:beef:1000:0:0:0:3/127",
@@ -260,154 +593,363 @@
                 "export": false,
                 "gateway": false,
                 "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
                 "ra6Prefixes": [],
-                "routes4": [],
-                "routes6": [],
-                "tenant": null
+                "routes4": [
+                  {
+                    "dst": "0.0.0.0/0",
+                    "via4": "10.10.0.2"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "::/0",
+                    "via6": "fd42:dead:beef:1000:0:0:0:2"
+                  }
+                ],
+                "tenant": null,
+                "upstream": null
+              },
+              "p2p-s-router-policy-s-router-upstream-selector": {
+                "acceptRA": false,
+                "addr4": "10.10.0.5/31",
+                "addr6": "fd42:dead:beef:1000:0:0:0:5/127",
+                "addr6Public": null,
+                "carrier": "lan",
+                "dhcp": false,
+                "export": false,
+                "gateway": false,
+                "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
+                "ra6Prefixes": [],
+                "routes4": [
+                  {
+                    "dst": "10.20.10.0/24",
+                    "via4": "10.10.0.4"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "fd42:dead:beef:10::/64",
+                    "via6": "fd42:dead:beef:1000:0:0:0:4"
+                  }
+                ],
+                "tenant": null,
+                "upstream": null
               }
             },
-            "role": "policy"
+            "isolated": false,
+            "role": "upstream-selector",
+            "routingDomain": "vrf-default"
           }
         }
       },
       "site-b": {
+        "_debug": {
+          "compilerIR": {
+            "addressPools": {
+              "local": {
+                "ipv4": "10.29.0.0/24",
+                "ipv6": "fd42:dead:beef:2900::/118"
+              },
+              "p2p": {
+                "ipv4": "10.11.0.0/24",
+                "ipv6": "fd42:dead:beef:1100::/118"
+              }
+            },
+            "attachment": [
+              {
+                "segment": "tenants:mgmt",
+                "unit": "s-router-access"
+              }
+            ],
+            "communicationContract": {
+              "allowedRelations": [],
+              "nat": {
+                "enabled": false,
+                "ingress": []
+              }
+            },
+            "domains": {
+              "tenants": [
+                {
+                  "ipv4": "10.30.10.0/24",
+                  "ipv6": "fd42:dead:beef:11::/64",
+                  "name": "mgmt"
+                }
+              ]
+            },
+            "routerLoopbacks": {
+              "s-router-access": {
+                "ipv4": "10.29.0.1",
+                "ipv6": "fd42:dead:beef:2900:0:0:0:1"
+              },
+              "s-router-core": {
+                "ipv4": "10.29.0.2",
+                "ipv6": "fd42:dead:beef:2900:0:0:0:2"
+              },
+              "s-router-policy": {
+                "ipv4": "10.29.0.3",
+                "ipv6": "fd42:dead:beef:2900:0:0:0:3"
+              },
+              "s-router-upstream-selector": {
+                "ipv4": "10.29.0.4",
+                "ipv6": "fd42:dead:beef:2900:0:0:0:4"
+              }
+            },
+            "transit": {
+              "adjacencies": [
+                {
+                  "endpoints": [
+                    {
+                      "local": {
+                        "ipv4": "10.11.0.1",
+                        "ipv6": "fd42:dead:beef:1100:0:0:0:1"
+                      },
+                      "unit": "s-router-core"
+                    },
+                    {
+                      "local": {
+                        "ipv4": "10.11.0.2",
+                        "ipv6": "fd42:dead:beef:1100:0:0:0:2"
+                      },
+                      "unit": "s-router-upstream-selector"
+                    }
+                  ]
+                },
+                {
+                  "endpoints": [
+                    {
+                      "local": {
+                        "ipv4": "10.11.0.3",
+                        "ipv6": "fd42:dead:beef:1100:0:0:0:3"
+                      },
+                      "unit": "s-router-upstream-selector"
+                    },
+                    {
+                      "local": {
+                        "ipv4": "10.11.0.4",
+                        "ipv6": "fd42:dead:beef:1100:0:0:0:4"
+                      },
+                      "unit": "s-router-policy"
+                    }
+                  ]
+                },
+                {
+                  "endpoints": [
+                    {
+                      "local": {
+                        "ipv4": "10.11.0.5",
+                        "ipv6": "fd42:dead:beef:1100:0:0:0:5"
+                      },
+                      "unit": "s-router-policy"
+                    },
+                    {
+                      "local": {
+                        "ipv4": "10.11.0.6",
+                        "ipv6": "fd42:dead:beef:1100:0:0:0:6"
+                      },
+                      "unit": "s-router-access"
+                    }
+                  ]
+                }
+              ],
+              "ordering": [
+                [
+                  "s-router-core",
+                  "s-router-upstream-selector"
+                ],
+                [
+                  "s-router-upstream-selector",
+                  "s-router-policy"
+                ],
+                [
+                  "s-router-policy",
+                  "s-router-access"
+                ]
+              ]
+            },
+            "transport": {
+              "overlays": []
+            },
+            "units": {
+              "s-router-access": {
+                "containers": [
+                  "isolated-0"
+                ],
+                "isolated": true
+              },
+              "s-router-core": {
+                "containers": [
+                  "isolated-0"
+                ],
+                "isolated": true
+              },
+              "s-router-policy": {
+                "containers": [
+                  "default"
+                ],
+                "isolated": false
+              },
+              "s-router-upstream-selector": {
+                "containers": [
+                  "default"
+                ],
+                "isolated": false
+              }
+            },
+            "upstreams": {
+              "cores": {
+                "s-router-core": [
+                  {
+                    "name": "isp-a"
+                  },
+                  {
+                    "name": "isp-b"
+                  }
+                ]
+              },
+              "multiWan": true
+            }
+          }
+        },
+        "_enforcement": {
+          "owner": "s-router-policy",
+          "rules": []
+        },
+        "_nat": {
+          "ingress": [],
+          "mode": "none",
+          "owner": "s-router-core"
+        },
         "_routingMaps": {
-          "assumptions": {
-            "core": "s-router-core",
-            "policy": "s-router-policy",
-            "singleAccess": "s-router-access",
-            "upstreamSelector": null
-          },
           "defaults": {
             "default4": "0.0.0.0/0",
             "default6": "::/0"
           },
+          "enforcement": {
+            "owner": "s-router-policy",
+            "rules": []
+          },
           "mode": "static",
-          "tenants": {
-            "ipv4": [
-              "10.30.10.0/24"
+          "nat": {
+            "ingress": [],
+            "mode": "none",
+            "owner": "s-router-core"
+          },
+          "traversal": {
+            "accessUnitHint": "s-router-access",
+            "chain": [
+              "s-router-core",
+              "s-router-upstream-selector",
+              "s-router-policy",
+              "s-router-access"
             ],
-            "ipv6": [
-              "fd42:dead:beef:11::/64"
-            ]
-          }
-        },
-        "compilerIR": {
-          "addressPools": {
-            "local": {
-              "ipv4": "10.29.0.0/24",
-              "ipv6": "fd42:dead:beef:2900::/118"
-            },
-            "p2p": {
-              "ipv4": "10.11.0.0/24",
-              "ipv6": "fd42:dead:beef:1100::/118"
-            }
-          },
-          "attachment": [
-            {
-              "segment": "tenants:mgmt",
-              "unit": "s-router-access"
-            }
-          ],
-          "communicationContract": {
-            "allowedRelations": [],
-            "nat": {
-              "ingress": []
-            }
-          },
-          "domains": {
-            "tenants": [
+            "coreUnitHint": "s-router-core",
+            "edges": [
               {
-                "ipv4": "10.30.10.0/24",
-                "ipv6": "fd42:dead:beef:11::/64",
-                "name": "mgmt"
-              }
-            ]
-          },
-          "routerLoopbacks": {
-            "s-router-access": {
-              "ipv4": "10.29.0.1",
-              "ipv6": "fd42:dead:beef:2900:0:0:0:1"
-            },
-            "s-router-core": {
-              "ipv4": "10.29.0.2",
-              "ipv6": "fd42:dead:beef:2900:0:0:0:2"
-            },
-            "s-router-policy": {
-              "ipv4": "10.29.0.3",
-              "ipv6": "fd42:dead:beef:2900:0:0:0:3"
-            }
-          },
-          "transit": {
-            "adjacencies": [
-              {
-                "endpoints": [
-                  {
-                    "local": {
-                      "ipv4": "10.11.0.1",
-                      "ipv6": "fd42:dead:beef:1100:0:0:0:1"
-                    },
-                    "unit": "s-router-core"
-                  },
-                  {
-                    "local": {
-                      "ipv4": "10.11.0.2",
-                      "ipv6": "fd42:dead:beef:1100:0:0:0:2"
-                    },
-                    "unit": "s-router-policy"
-                  }
-                ]
+                "a": "s-router-core",
+                "b": "s-router-upstream-selector"
               },
               {
-                "endpoints": [
-                  {
-                    "local": {
-                      "ipv4": "10.11.0.3",
-                      "ipv6": "fd42:dead:beef:1100:0:0:0:3"
-                    },
-                    "unit": "s-router-policy"
-                  },
-                  {
-                    "local": {
-                      "ipv4": "10.11.0.4",
-                      "ipv6": "fd42:dead:beef:1100:0:0:0:4"
-                    },
-                    "unit": "s-router-access"
-                  }
-                ]
+                "a": "s-router-upstream-selector",
+                "b": "s-router-policy"
+              },
+              {
+                "a": "s-router-policy",
+                "b": "s-router-access"
               }
             ],
-            "ordering": [
-              [
+            "inferred": {
+              "s-router-access": "access",
+              "s-router-core": "core",
+              "s-router-policy": "policy",
+              "s-router-upstream-selector": "upstream-selector"
+            },
+            "mode": "ordering-chain"
+          }
+        },
+        "_traversal": {
+          "accessUnitHint": "s-router-access",
+          "chain": [
+            "s-router-core",
+            "s-router-upstream-selector",
+            "s-router-policy",
+            "s-router-access"
+          ],
+          "coreUnitHint": "s-router-core",
+          "edges": [
+            {
+              "a": "s-router-core",
+              "b": "s-router-upstream-selector"
+            },
+            {
+              "a": "s-router-upstream-selector",
+              "b": "s-router-policy"
+            },
+            {
+              "a": "s-router-policy",
+              "b": "s-router-access"
+            }
+          ],
+          "inferred": {
+            "s-router-access": "access",
+            "s-router-core": "core",
+            "s-router-policy": "policy",
+            "s-router-upstream-selector": "upstream-selector"
+          },
+          "mode": "ordering-chain"
+        },
+        "_verification": {
+          "solver": {
+            "nat": {
+              "ingress": [],
+              "mode": "none",
+              "owner": "s-router-core"
+            },
+            "traversal": {
+              "accessUnitHint": "s-router-access",
+              "chain": [
                 "s-router-core",
-                "s-router-policy"
-              ],
-              [
+                "s-router-upstream-selector",
                 "s-router-policy",
                 "s-router-access"
-              ]
-            ]
-          },
-          "units": {
-            "s-router-access": {
-              "containers": [
-                "isolated-0"
               ],
-              "isolated": true
-            },
-            "s-router-core": {
-              "containers": [
-                "isolated-0"
+              "coreUnitHint": "s-router-core",
+              "edges": [
+                {
+                  "a": "s-router-core",
+                  "b": "s-router-upstream-selector"
+                },
+                {
+                  "a": "s-router-upstream-selector",
+                  "b": "s-router-policy"
+                },
+                {
+                  "a": "s-router-policy",
+                  "b": "s-router-access"
+                }
               ],
-              "isolated": true
-            },
-            "s-router-policy": {
-              "containers": [
-                "default"
-              ],
-              "isolated": false
+              "inferred": {
+                "s-router-access": "access",
+                "s-router-core": "core",
+                "s-router-policy": "policy",
+                "s-router-upstream-selector": "upstream-selector"
+              },
+              "mode": "ordering-chain"
             }
           }
+        },
+        "domains": {
+          "tenants": [
+            {
+              "ipv4": "10.30.10.0/24",
+              "ipv6": "fd42:dead:beef:11::/64",
+              "name": "mgmt"
+            }
+          ]
         },
         "links": {
           "p2p-s-router-access-s-router-policy": {
@@ -423,22 +965,68 @@
             },
             "kind": "p2p"
           },
-          "p2p-s-router-core-s-router-policy": {
+          "p2p-s-router-core-s-router-upstream-selector": {
             "endpoints": {
               "s-router-core": {
                 "addr4": "10.11.0.2/31",
                 "addr6": "fd42:dead:beef:1100:0:0:0:2/127"
               },
-              "s-router-policy": {
+              "s-router-upstream-selector": {
                 "addr4": "10.11.0.3/31",
                 "addr6": "fd42:dead:beef:1100:0:0:0:3/127"
               }
             },
             "kind": "p2p"
+          },
+          "p2p-s-router-policy-s-router-upstream-selector": {
+            "endpoints": {
+              "s-router-policy": {
+                "addr4": "10.11.0.4/31",
+                "addr6": "fd42:dead:beef:1100:0:0:0:4/127"
+              },
+              "s-router-upstream-selector": {
+                "addr4": "10.11.0.5/31",
+                "addr6": "fd42:dead:beef:1100:0:0:0:5/127"
+              }
+            },
+            "kind": "p2p"
+          },
+          "wan-s-router-core-isp-a": {
+            "carrier": "wan",
+            "endpoints": {
+              "s-router-core": {
+                "addr4": "10.29.0.100/32",
+                "addr6": "fd42:dead:beef:2900:0:0:0:64/128",
+                "export": true,
+                "gateway": true,
+                "ll6": "fe80:0:0:0:0:0:0:1/128"
+              }
+            },
+            "kind": "wan",
+            "overlay": null,
+            "upstream": "isp-a"
+          },
+          "wan-s-router-core-isp-b": {
+            "carrier": "wan",
+            "endpoints": {
+              "s-router-core": {
+                "addr4": "10.29.0.101/32",
+                "addr6": "fd42:dead:beef:2900:0:0:0:65/128",
+                "export": true,
+                "gateway": true,
+                "ll6": "fe80:0:0:0:0:0:0:2/128"
+              }
+            },
+            "kind": "wan",
+            "overlay": null,
+            "upstream": "isp-b"
           }
         },
         "nodes": {
           "s-router-access": {
+            "containers": [
+              "isolated-0"
+            ],
             "interfaces": {
               "p2p-s-router-access-s-router-policy": {
                 "acceptRA": false,
@@ -450,6 +1038,8 @@
                 "export": false,
                 "gateway": false,
                 "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
                 "ra6Prefixes": [],
                 "routes4": [
                   {
@@ -463,14 +1053,20 @@
                     "via6": "fd42:dead:beef:1100:0:0:0:1"
                   }
                 ],
-                "tenant": null
+                "tenant": null,
+                "upstream": null
               }
             },
-            "role": "access"
+            "isolated": true,
+            "role": "access",
+            "routingDomain": "vrf-s-router-access-isolated"
           },
           "s-router-core": {
+            "containers": [
+              "isolated-0"
+            ],
             "interfaces": {
-              "p2p-s-router-core-s-router-policy": {
+              "p2p-s-router-core-s-router-upstream-selector": {
                 "acceptRA": false,
                 "addr4": "10.11.0.2/31",
                 "addr6": "fd42:dead:beef:1100:0:0:0:2/127",
@@ -480,15 +1076,85 @@
                 "export": false,
                 "gateway": false,
                 "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
                 "ra6Prefixes": [],
-                "routes4": [],
-                "routes6": [],
-                "tenant": null
+                "routes4": [
+                  {
+                    "dst": "10.30.10.0/24",
+                    "via4": "10.11.0.3"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "fd42:dead:beef:11::/64",
+                    "via6": "fd42:dead:beef:1100:0:0:0:3"
+                  }
+                ],
+                "tenant": null,
+                "upstream": null
+              },
+              "wan-s-router-core-isp-a": {
+                "acceptRA": false,
+                "addr4": "10.29.0.100/32",
+                "addr6": "fd42:dead:beef:2900:0:0:0:64/128",
+                "addr6Public": null,
+                "carrier": "wan",
+                "dhcp": false,
+                "export": true,
+                "gateway": true,
+                "kind": "wan",
+                "ll6": "fe80:0:0:0:0:0:0:1/128",
+                "overlay": null,
+                "ra6Prefixes": [],
+                "routes4": [
+                  {
+                    "dst": "0.0.0.0/0"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "::/0"
+                  }
+                ],
+                "tenant": null,
+                "upstream": "isp-a"
+              },
+              "wan-s-router-core-isp-b": {
+                "acceptRA": false,
+                "addr4": "10.29.0.101/32",
+                "addr6": "fd42:dead:beef:2900:0:0:0:65/128",
+                "addr6Public": null,
+                "carrier": "wan",
+                "dhcp": false,
+                "export": true,
+                "gateway": true,
+                "kind": "wan",
+                "ll6": "fe80:0:0:0:0:0:0:2/128",
+                "overlay": null,
+                "ra6Prefixes": [],
+                "routes4": [
+                  {
+                    "dst": "0.0.0.0/0"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "::/0"
+                  }
+                ],
+                "tenant": null,
+                "upstream": "isp-b"
               }
             },
-            "role": "core"
+            "isolated": true,
+            "role": "core",
+            "routingDomain": "vrf-s-router-core-isolated"
           },
           "s-router-policy": {
+            "containers": [
+              "default"
+            ],
             "interfaces": {
               "p2p-s-router-access-s-router-policy": {
                 "acceptRA": false,
@@ -500,6 +1166,8 @@
                 "export": false,
                 "gateway": false,
                 "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
                 "ra6Prefixes": [],
                 "routes4": [
                   {
@@ -513,9 +1181,48 @@
                     "via6": "fd42:dead:beef:1100:0:0:0:0"
                   }
                 ],
-                "tenant": null
+                "tenant": null,
+                "upstream": null
               },
-              "p2p-s-router-core-s-router-policy": {
+              "p2p-s-router-policy-s-router-upstream-selector": {
+                "acceptRA": false,
+                "addr4": "10.11.0.4/31",
+                "addr6": "fd42:dead:beef:1100:0:0:0:4/127",
+                "addr6Public": null,
+                "carrier": "lan",
+                "dhcp": false,
+                "export": false,
+                "gateway": false,
+                "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
+                "ra6Prefixes": [],
+                "routes4": [
+                  {
+                    "dst": "0.0.0.0/0",
+                    "via4": "10.11.0.5"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "::/0",
+                    "via6": "fd42:dead:beef:1100:0:0:0:5"
+                  }
+                ],
+                "tenant": null,
+                "upstream": null
+              }
+            },
+            "isolated": false,
+            "role": "policy",
+            "routingDomain": "vrf-default"
+          },
+          "s-router-upstream-selector": {
+            "containers": [
+              "default"
+            ],
+            "interfaces": {
+              "p2p-s-router-core-s-router-upstream-selector": {
                 "acceptRA": false,
                 "addr4": "10.11.0.3/31",
                 "addr6": "fd42:dead:beef:1100:0:0:0:3/127",
@@ -525,13 +1232,56 @@
                 "export": false,
                 "gateway": false,
                 "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
                 "ra6Prefixes": [],
-                "routes4": [],
-                "routes6": [],
-                "tenant": null
+                "routes4": [
+                  {
+                    "dst": "0.0.0.0/0",
+                    "via4": "10.11.0.2"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "::/0",
+                    "via6": "fd42:dead:beef:1100:0:0:0:2"
+                  }
+                ],
+                "tenant": null,
+                "upstream": null
+              },
+              "p2p-s-router-policy-s-router-upstream-selector": {
+                "acceptRA": false,
+                "addr4": "10.11.0.5/31",
+                "addr6": "fd42:dead:beef:1100:0:0:0:5/127",
+                "addr6Public": null,
+                "carrier": "lan",
+                "dhcp": false,
+                "export": false,
+                "gateway": false,
+                "kind": "p2p",
+                "ll6": null,
+                "overlay": null,
+                "ra6Prefixes": [],
+                "routes4": [
+                  {
+                    "dst": "10.30.10.0/24",
+                    "via4": "10.11.0.4"
+                  }
+                ],
+                "routes6": [
+                  {
+                    "dst": "fd42:dead:beef:11::/64",
+                    "via6": "fd42:dead:beef:1100:0:0:0:4"
+                  }
+                ],
+                "tenant": null,
+                "upstream": null
               }
             },
-            "role": "policy"
+            "isolated": false,
+            "role": "upstream-selector",
+            "routingDomain": "vrf-default"
           }
         }
       }

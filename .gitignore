@@ -6,3 +6,18 @@ fabric.clab.yml
 # Python
 __pycache__/
 *.pyc
+# Nix
+result
+result-*
+
+# Python
+__pycache__/
+*.pyc
+
+# Containerlab artifacts
+clab-*/
+*.log
+
+# Security hygiene: never commit private keys
+clab-fabric/.tls/**/*.key
+**/*.key

@@ -1,3 +1,4 @@
+# ./vm.nix
 {
   config,
   pkgs,
@@ -6,19 +7,9 @@
 }:
 
 let
-  bridges = [
-    "a-ctl"
-    "a-svc"
-    "a-end"
-    "a-corp"
-    "a-iot"
-    "a-dmz"
-    "a-lab"
-    "a-obs"
-    "b-corp"
-    "b-client"
-    "ovl"
-  ];
+  generated = import ./bridges-generated.nix { inherit lib; };
+
+  bridges = generated.bridges;
 
   mkNetdev = name: {
     netdevConfig = {
@@ -37,7 +28,7 @@ let
   };
 in
 {
-  system.stateVersion = "24.11";
+  system.stateVersion = "25.11";
 
   networking.useNetworkd = true;
 
@@ -83,6 +74,7 @@ in
   virtualisation.cores = 22;
   environment.etc.hosts.enable = false;
   services.openssh.enable = true;
+
   nixos-shell.mounts = {
     cache = "none";
   };
