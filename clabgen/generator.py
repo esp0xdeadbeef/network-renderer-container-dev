@@ -1,3 +1,4 @@
+# FILE: ./clabgen/generator.py
 from __future__ import annotations
 
 import hashlib
@@ -21,6 +22,20 @@ def _scoped_name(site: SiteModel, node: NodeModel) -> str:
     return f"{site.enterprise}-{site.site}-{node.name}{_container_suffix(node)}"
 
 
+def _validate_prefix_preserved(addr: str) -> None:
+    if "/" not in addr:
+        raise RuntimeError(f"Invalid address without prefix: {addr}")
+
+
+def _peer_p2p(addr: str) -> str:
+    iface = ipaddress.ip_interface(addr)
+    hosts = list(iface.network.hosts())
+    if len(hosts) != 2:
+        raise RuntimeError("P2P network must have exactly two hosts")
+    peer = hosts[0] if hosts[1] == iface.ip else hosts[1]
+    return f"{peer}/{iface.network.prefixlen}"
+
+
 def _render_node(node: NodeModel, eth_map: Dict[str, int]) -> Dict:
     cmds: List[str] = [
         "sysctl -w net.ipv4.ip_forward=1",
@@ -35,10 +50,13 @@ def _render_node(node: NodeModel, eth_map: Dict[str, int]) -> Dict:
         cmds.append(f"ip link set {dev} up")
 
         if iface.addr4:
+            _validate_prefix_preserved(iface.addr4)
             cmds.append(f"ip addr replace {iface.addr4} dev {dev}")
         if iface.addr6:
+            _validate_prefix_preserved(iface.addr6)
             cmds.append(f"ip -6 addr replace {iface.addr6} dev {dev}")
         if iface.ll6:
+            _validate_prefix_preserved(iface.ll6)
             cmds.append(f"ip -6 addr replace {iface.ll6} dev {dev}")
 
         for r in iface.routes4:
@@ -56,31 +74,6 @@ def _render_node(node: NodeModel, eth_map: Dict[str, int]) -> Dict:
     return {"exec": cmds}
 
 
-def _derive_client_lan(node: NodeModel):
-    v4 = v6 = None
-    for iface in node.interfaces.values():
-        if iface.addr4 and iface.addr4.endswith("/31"):
-            v4 = ipaddress.IPv4Interface(iface.addr4)
-        if iface.addr6 and iface.addr6.endswith("/127"):
-            v6 = ipaddress.IPv6Interface(iface.addr6)
-
-    if not v4 or not v6:
-        raise RuntimeError("singleAccess node missing uplink")
-
-    peer4 = list(v4.network.hosts())[0]
-    lan4 = ipaddress.IPv4Network(f"{peer4}/24", strict=False)
-    peer6 = list(v6.network.hosts())[0]
-    base64 = (int(peer6) >> 64) << 64
-    lan6 = ipaddress.IPv6Network((base64, 64))
-
-    return (
-        f"{lan4.network_address + 1}/24",
-        f"{lan4.network_address + 2}/24",
-        f"{lan6.network_address + 1}/64",
-        f"{lan6.network_address + 2}/64",
-    )
-
-
 def generate_topology(site: SiteModel) -> Dict:
     rendered_nodes: Dict[str, Dict] = {}
     rendered_links: List[Dict] = []
@@ -88,7 +81,6 @@ def generate_topology(site: SiteModel) -> Dict:
 
     eth_index: Dict[str, Dict[str, int]] = {u: {} for u in site.nodes}
 
-    # assign eth indexes for ALL links (lan + wan)
     for lk, link in site.links.items():
         for unit in link.endpoints.keys():
             if unit in eth_index:
@@ -102,21 +94,20 @@ def generate_topology(site: SiteModel) -> Dict:
     for u, node in site.nodes.items():
         rendered_nodes[unit_name[u]] = _render_node(node, eth_index[u])
 
-    # deterministic WAN ISP naming per core (do NOT inherit container suffix)
     for lk, link in site.links.items():
         bridge = _short_bridge(f"{site.enterprise}-{site.site}-{lk}")
         bridges.add(bridge)
 
         units = list(link.endpoints.keys())
 
+        # WAN: solver defines only core side, we synthesize ISP side
         if link.kind == "wan":
             if len(units) != 1:
-                continue
+                raise RuntimeError(f"WAN link must have exactly one endpoint: {lk}")
 
             unit = units[0]
-            core_rendered_name = unit_name[unit]
-
-            suffix = lk.split("-")[-1]  # isp-a / isp-b
+            core_name = unit_name[unit]
+            suffix = lk.split("-")[-1]
             isp_name = f"{site.enterprise}-{site.site}-{unit}-isp-{suffix}"
 
             if isp_name not in rendered_nodes:
@@ -130,7 +121,7 @@ def generate_topology(site: SiteModel) -> Dict:
 
             rendered_links.append({
                 "endpoints": [
-                    f"{core_rendered_name}:eth{eth_index[unit][lk]}",
+                    f"{core_name}:eth{eth_index[unit][lk]}",
                     f"{isp_name}:eth1",
                 ],
                 "labels": {
@@ -138,57 +129,81 @@ def generate_topology(site: SiteModel) -> Dict:
                     "clab.link.bridge": bridge,
                 },
             })
+            continue
 
-        elif len(units) == 2:
-            u1, u2 = units
-            rendered_links.append({
-                "endpoints": [
-                    f"{unit_name[u1]}:eth{eth_index[u1][lk]}",
-                    f"{unit_name[u2]}:eth{eth_index[u2][lk]}",
-                ],
-                "labels": {
-                    "clab.link.type": "bridge",
-                    "clab.link.bridge": bridge,
-                },
-            })
+        if len(units) != 2:
+            raise RuntimeError(f"Link must have exactly two endpoints: {lk}")
 
-    # validation client
+        u1, u2 = units
+        labels = {
+            "clab.link.type": "bridge",
+            "clab.link.bridge": bridge,
+        }
+        if link.kind == "p2p":
+            labels["clab.link.mode"] = "p2p"
+
+        rendered_links.append({
+            "endpoints": [
+                f"{unit_name[u1]}:eth{eth_index[u1][lk]}",
+                f"{unit_name[u2]}:eth{eth_index[u2][lk]}",
+            ],
+            "labels": labels,
+        })
+
+    # ACCESS CLIENT
     access = site.single_access
     access_node = site.nodes[access]
-    access_name = unit_name[access]
+    access_rendered = unit_name[access]
 
-    access_v4, client_v4, access_v6, client_v6 = _derive_client_lan(access_node)
+    uplink_iface = None
+    for iface in access_node.interfaces.values():
+        if iface.addr4 and iface.addr4.endswith("/31"):
+            uplink_iface = iface
+            break
+        if iface.addr6 and iface.addr6.endswith("/127"):
+            uplink_iface = iface
+            break
 
-    idx = len(eth_index[access]) + 1
-    dev = f"eth{idx}"
+    if uplink_iface is None:
+        raise RuntimeError("Access node missing /31 or /127 uplink")
 
-    rendered_nodes[access_name]["exec"].extend([
-        f"ip link set {dev} up",
-        f"ip addr replace {access_v4} dev {dev}",
-        f"ip -6 addr replace {access_v6} dev {dev}",
-    ])
+    client_name = f"{access_rendered}-client"
+    eth_client = 1
+    eth_access = len(eth_index[access]) + 1
 
-    client_name = f"{access_name}-client"
+    cmds = [
+        "sysctl -w net.ipv4.ip_forward=0",
+        "sysctl -w net.ipv6.conf.all.forwarding=0",
+        f"ip link set eth{eth_client} up",
+    ]
 
-    rendered_nodes[client_name] = {
-        "exec": [
-            "sysctl -w net.ipv4.ip_forward=0",
-            "sysctl -w net.ipv6.conf.all.forwarding=0",
-            "ip link set eth1 up",
-            f"ip addr replace {client_v4} dev eth1",
-            f"ip -6 addr replace {client_v6} dev eth1",
-            f"ip route replace 0.0.0.0/0 via {access_v4.split('/')[0]} dev eth1",
-            f"ip -6 route replace ::/0 via {access_v6.split('/')[0]} dev eth1",
-        ]
-    }
+    if uplink_iface.addr4:
+        peer4 = _peer_p2p(uplink_iface.addr4)
+        _validate_prefix_preserved(peer4)
+        cmds.append(f"ip addr replace {peer4} dev eth{eth_client}")
+        gw4 = uplink_iface.addr4.split("/")[0]
+        cmds.append(f"ip route replace 0.0.0.0/0 via {gw4} dev eth{eth_client}")
+
+    if uplink_iface.addr6:
+        peer6 = _peer_p2p(uplink_iface.addr6)
+        _validate_prefix_preserved(peer6)
+        cmds.append(f"ip -6 addr replace {peer6} dev eth{eth_client}")
+        gw6 = uplink_iface.addr6.split("/")[0]
+        cmds.append(f"ip -6 route replace ::/0 via {gw6} dev eth{eth_client}")
+
+    rendered_nodes[client_name] = {"exec": cmds}
 
     client_bridge = _short_bridge(f"{site.enterprise}-{site.site}-client")
     bridges.add(client_bridge)
 
+    rendered_nodes[access_rendered]["exec"].append(
+        f"ip link set eth{eth_access} up"
+    )
+
     rendered_links.append({
         "endpoints": [
-            f"{client_name}:eth1",
-            f"{access_name}:{dev}",
+            f"{client_name}:eth{eth_client}",
+            f"{access_rendered}:eth{eth_access}",
         ],
         "labels": {
             "clab.link.type": "bridge",
