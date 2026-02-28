@@ -9,25 +9,14 @@ topology:
       net.ipv6.conf.all.forwarding: '1'
       net.ipv4.conf.default.rp_filter: '0'
   nodes:
-    esp0xdeadbeef-site-a-s-router-access:
+    esp0xdeadbeef-site-a-isp-isp-a:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
-      - ip link set eth1 up
-      - ip addr replace 10.10.0.0/31 dev eth1
-      - ip -6 addr replace fd42:dead:beef:1000:0:0:0:0/127 dev eth1
-      - ip route replace 0.0.0.0/0 via 10.10.0.1 dev eth1
-      - ip -6 route replace ::/0 via fd42:dead:beef:1000:0:0:0:1 dev eth1
-    esp0xdeadbeef-site-a-s-router-core:
+    esp0xdeadbeef-site-a-isp-isp-b:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
-      - ip link set eth1 up
-      - ip addr replace 10.10.0.2/31 dev eth1
-      - ip -6 addr replace fd42:dead:beef:1000:0:0:0:2/127 dev eth1
-      - ip route replace 10.20.10.0/24 via 10.10.0.3 dev eth1
-      - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:3
-        dev eth1
     esp0xdeadbeef-site-a-s-router-policy:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
@@ -58,25 +47,14 @@ topology:
       - ip route replace 10.20.10.0/24 via 10.10.0.4 dev eth2
       - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:4
         dev eth2
-    esp0xdeadbeef-site-b-s-router-access:
+    esp0xdeadbeef-site-b-isp-isp-a:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
-      - ip link set eth1 up
-      - ip addr replace 10.11.0.0/31 dev eth1
-      - ip -6 addr replace fd42:dead:beef:1100:0:0:0:0/127 dev eth1
-      - ip route replace 0.0.0.0/0 via 10.11.0.1 dev eth1
-      - ip -6 route replace ::/0 via fd42:dead:beef:1100:0:0:0:1 dev eth1
-    esp0xdeadbeef-site-b-s-router-core:
+    esp0xdeadbeef-site-b-isp-isp-b:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
-      - ip link set eth1 up
-      - ip addr replace 10.11.0.2/31 dev eth1
-      - ip -6 addr replace fd42:dead:beef:1100:0:0:0:2/127 dev eth1
-      - ip route replace 10.30.10.0/24 via 10.11.0.3 dev eth1
-      - ip -6 route replace fd42:dead:beef:11::/64 via fd42:dead:beef:1100:0:0:0:3
-        dev eth1
     esp0xdeadbeef-site-b-s-router-policy:
       exec:
       - sysctl -w net.ipv4.ip_forward=1
@@ -109,20 +87,8 @@ topology:
         dev eth2
   links:
   - endpoints:
-    - esp0xdeadbeef-site-a-s-router-access:eth1
-    - esp0xdeadbeef-site-a-s-router-policy:eth1
-  - endpoints:
-    - esp0xdeadbeef-site-a-s-router-core:eth1
-    - esp0xdeadbeef-site-a-s-router-upstream-selector:eth1
-  - endpoints:
     - esp0xdeadbeef-site-a-s-router-policy:eth2
     - esp0xdeadbeef-site-a-s-router-upstream-selector:eth2
-  - endpoints:
-    - esp0xdeadbeef-site-b-s-router-access:eth1
-    - esp0xdeadbeef-site-b-s-router-policy:eth1
-  - endpoints:
-    - esp0xdeadbeef-site-b-s-router-core:eth1
-    - esp0xdeadbeef-site-b-s-router-upstream-selector:eth1
   - endpoints:
     - esp0xdeadbeef-site-b-s-router-policy:eth2
     - esp0xdeadbeef-site-b-s-router-upstream-selector:eth2

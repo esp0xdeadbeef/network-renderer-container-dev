@@ -37,39 +37,79 @@ def _emit_iface_routes(iface_obj: Dict[str, Any], version: int, dev: str) -> Lis
         dst = r.get("dst")
         if not isinstance(dst, str) or not dst:
             continue
+
         if version == 4:
             via = r.get("via4")
-            if not isinstance(via, str) or not via:
-                continue
-            cmds.append(f"ip route replace {dst} via {via} dev {dev}")
+            if isinstance(via, str) and via:
+                cmds.append(f"ip route replace {dst} via {via} dev {dev}")
+            else:
+                cmds.append(f"ip route replace {dst} dev {dev}")
         else:
             via = r.get("via6")
-            if not isinstance(via, str) or not via:
-                continue
-            cmds.append(f"ip -6 route replace {dst} via {via} dev {dev}")
+            if isinstance(via, str) and via:
+                cmds.append(f"ip -6 route replace {dst} via {via} dev {dev}")
+            else:
+                cmds.append(f"ip -6 route replace {dst} dev {dev}")
+
     return cmds
 
 
+def _is_strict_p2p(link_obj: Any) -> bool:
+    return (
+        isinstance(link_obj, dict)
+        and link_obj.get("kind") == "p2p"
+        and isinstance(link_obj.get("endpoints"), dict)
+        and len(link_obj["endpoints"]) == 2
+    )
+
+
+def _is_wan(link_obj: Any) -> bool:
+    return (
+        isinstance(link_obj, dict)
+        and link_obj.get("kind") == "wan"
+        and isinstance(link_obj.get("endpoints"), dict)
+        and len(link_obj["endpoints"]) == 1
+        and isinstance(link_obj.get("upstream"), str)
+        and bool(link_obj.get("upstream"))
+    )
+
+
+def _eth_index_for_node(
+    node: str,
+    link_key: str,
+    relevant_links: Dict[str, Dict[str, Any]],
+) -> int:
+    idx = 1
+    for lk in sorted(relevant_links.keys()):
+        lo = relevant_links[lk]
+        eps = lo.get("endpoints")
+        if not isinstance(eps, dict) or node not in eps:
+            continue
+        if lk == link_key:
+            return idx
+        idx += 1
+    return 1
+
+
 def _render_node(
-    ent: str,
-    site: str,
     node_name: str,
     node_obj: Dict[str, Any],
-    p2p_links: Dict[str, Dict[str, Any]],
+    relevant_links: Dict[str, Dict[str, Any]],
 ) -> Dict[str, Any]:
-    full_name = f"{ent}-{site}-{node_name}"
     exec_cmds: List[str] = [
         "sysctl -w net.ipv4.ip_forward=1",
         "sysctl -w net.ipv6.conf.all.forwarding=1",
     ]
 
-    eth_idx = 1
     interfaces = node_obj.get("interfaces", {})
     if not isinstance(interfaces, dict):
         return {"exec": exec_cmds}
 
-    for link_key, link_obj in p2p_links.items():
-        if node_name not in link_obj["endpoints"]:
+    eth_idx = 1
+    for link_key in sorted(relevant_links.keys()):
+        link_obj = relevant_links[link_key]
+        eps = link_obj.get("endpoints")
+        if not isinstance(eps, dict) or node_name not in eps:
             continue
 
         iface_obj = interfaces.get(link_key)
@@ -104,6 +144,7 @@ def main() -> None:
 
     rendered_nodes: Dict[str, Any] = {}
     rendered_links: List[Dict[str, Any]] = []
+    isp_eth_next: Dict[str, int] = {}
 
     for ent_name, site_name, site in sites:
         site_ctx = {"enterprise": ent_name, "site": site_name, "siteObj": site}
@@ -117,47 +158,97 @@ def main() -> None:
         if not isinstance(nodes, dict) or not isinstance(links, dict):
             fail("Invalid solver structure: nodes/links missing", context=site_ctx)
 
-        # Strict 2-endpoint p2p links only
-        p2p_links = {
-            lk: lo
-            for lk, lo in links.items()
-            if isinstance(lo, dict)
-            and lo.get("kind") == "p2p"
-            and isinstance(lo.get("endpoints"), dict)
-            and len(lo["endpoints"]) == 2
+        # remove isolated nodes (access, core)
+        filtered_nodes = {
+            name: obj
+            for name, obj in nodes.items()
+            if not bool(obj.get("isolated"))
         }
 
-        # Render ALL original nodes exactly once
-        for node_name, node_obj in nodes.items():
-            if not isinstance(node_obj, dict):
+        debug = site.get("_debug", {})
+        compiler_ir = debug.get("compilerIR", {})
+        upstreams = compiler_ir.get("upstreams", {})
+        cores = upstreams.get("cores", {})
+
+        for _, upstream_list in cores.items():
+            if not isinstance(upstream_list, list):
                 continue
+            for up in upstream_list:
+                if not isinstance(up, dict):
+                    continue
+                upstream_name = up.get("name")
+                if not isinstance(upstream_name, str) or not upstream_name:
+                    continue
+
+                isp_full = f"{ent_name}-{site_name}-isp-{upstream_name}"
+                if isp_full not in rendered_nodes:
+                    rendered_nodes[isp_full] = {
+                        "exec": [
+                            "sysctl -w net.ipv4.ip_forward=1",
+                            "sysctl -w net.ipv6.conf.all.forwarding=1",
+                        ]
+                    }
+                    isp_eth_next[isp_full] = 1
+
+        relevant_links: Dict[str, Dict[str, Any]] = {}
+        for lk, lo in links.items():
+            if not (_is_strict_p2p(lo) or _is_wan(lo)):
+                continue
+
+            eps = lo.get("endpoints", {})
+            if any(node in filtered_nodes for node in eps.keys()):
+                relevant_links[lk] = lo
+
+        for node_name in sorted(filtered_nodes.keys()):
+            node_obj = filtered_nodes[node_name]
             rendered_nodes[f"{ent_name}-{site_name}-{node_name}"] = _render_node(
-                ent_name, site_name, node_name, node_obj, p2p_links
+                node_name, node_obj, relevant_links
             )
 
-        # Render ALL strict p2p links exactly once
-        for link_key, link_obj in p2p_links.items():
-            eps = link_obj["endpoints"]
-            a, b = list(eps.keys())
+        for link_key in sorted(relevant_links.keys()):
+            link_obj = relevant_links[link_key]
 
-            # determine eth index by order of appearance in node rendering
-            def eth_index(node: str) -> int:
-                idx = 1
-                for lk2, lo2 in p2p_links.items():
-                    if node in lo2["endpoints"]:
-                        if lk2 == link_key:
-                            return idx
-                        idx += 1
-                return 1
+            if _is_strict_p2p(link_obj):
+                eps = link_obj["endpoints"]
+                a, b = sorted(eps.keys())
+                if a not in filtered_nodes or b not in filtered_nodes:
+                    continue
 
-            rendered_links.append(
-                {
-                    "endpoints": [
-                        f"{ent_name}-{site_name}-{a}:eth{eth_index(a)}",
-                        f"{ent_name}-{site_name}-{b}:eth{eth_index(b)}",
-                    ]
-                }
-            )
+                rendered_links.append(
+                    {
+                        "endpoints": [
+                            f"{ent_name}-{site_name}-{a}:eth{_eth_index_for_node(a, link_key, relevant_links)}",
+                            f"{ent_name}-{site_name}-{b}:eth{_eth_index_for_node(b, link_key, relevant_links)}",
+                        ]
+                    }
+                )
+                continue
+
+            if _is_wan(link_obj):
+                upstream = link_obj["upstream"]
+                eps = link_obj["endpoints"]
+                core_node = next(iter(eps.keys()))
+
+                if core_node not in filtered_nodes:
+                    continue
+
+                isp_full = f"{ent_name}-{site_name}-isp-{upstream}"
+                core_full = f"{ent_name}-{site_name}-{core_node}"
+
+                isp_eth = isp_eth_next.get(isp_full, 1)
+                isp_eth_next[isp_full] = isp_eth + 1
+
+                core_eth = _eth_index_for_node(core_node, link_key, relevant_links)
+
+                rendered_links.append(
+                    {
+                        "endpoints": [
+                            f"{core_full}:eth{core_eth}",
+                            f"{isp_full}:eth{isp_eth}",
+                        ]
+                    }
+                )
+                continue
 
     topology = {
         "name": "fabric",

@@ -7,7 +7,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from typing import List, Set
+from typing import List, Set, Dict, Any
 
 DEFAULT_SOLVER_JSON = "output-network-solver.json"
 OUTPUT_FILE = "bridges-generated.nix"
@@ -24,15 +24,30 @@ def main() -> None:
     solver_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(DEFAULT_SOLVER_JSON)
     output_path = Path(sys.argv[2]) if len(sys.argv) > 2 else Path(OUTPUT_FILE)
 
-    data = json.loads(solver_path.read_text())
+    if not solver_path.exists():
+        print(f"[generate-vm-bridges] ERROR: missing {solver_path}", file=sys.stderr)
+        sys.exit(1)
+
+    data: Dict[str, Any] = json.loads(solver_path.read_text())
 
     bridges: Set[str] = set()
 
-    enterprises = data.get("enterprises", {})
-    for ent_name, ent_obj in enterprises.items():
-        sites = ent_obj.get("sites", {})
-        for site_name, site_obj in sites.items():
+    # schemaVersion 2 layout: sites.<enterprise>.<site>
+    sites_root = data.get("sites", {})
+    if not isinstance(sites_root, dict):
+        print("[generate-vm-bridges] ERROR: invalid solver JSON (missing sites)", file=sys.stderr)
+        sys.exit(1)
+
+    for ent_name, ent_obj in sites_root.items():
+        if not isinstance(ent_obj, dict):
+            continue
+        for site_name, site_obj in ent_obj.items():
+            if not isinstance(site_obj, dict):
+                continue
             links = site_obj.get("links", {})
+            if not isinstance(links, dict):
+                continue
+
             for link_key, link_obj in links.items():
                 if (
                     isinstance(link_obj, dict)
