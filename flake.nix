@@ -1,4 +1,4 @@
-# flake.nix
+# ./flake.nix
 {
   description = "Containerlab VM host + network renderer";
 
@@ -24,7 +24,6 @@
 
     solverApp =
       network-solver.apps.${system}.compile-and-solve.program;
-
   in
   {
     nixosConfigurations.lab = nixpkgs.lib.nixosSystem {
@@ -46,13 +45,14 @@
             set -euo pipefail
 
             if [ "$#" -lt 1 ]; then
-              echo "Usage: $0 <input.nix> [output-topology.yml]"
+              echo "Usage: $0 <input.nix> [output-topology.yml] [output-bridges.nix]"
               exit 1
             fi
 
             INPUT_NIX="$1"
             OUTPUT_JSON="output-network-solver.json"
             TOPO_OUT="''${2:-fabric.clab.yml}"
+            BRIDGES_OUT="''${3:-vm-bridges-generated.nix}"
 
             echo "[*] Running solver..."
             ${solverApp} "$INPUT_NIX" > "$OUTPUT_JSON"
@@ -61,8 +61,9 @@
             jq empty "$OUTPUT_JSON"
 
             echo "[*] Generating Containerlab topology..."
-            exec ${pythonEnv}/bin/python3 ${./generate-clab-config.py} \
-              "$OUTPUT_JSON" "$TOPO_OUT"
+            PYTHONPATH="$(pwd)" \
+              ${pythonEnv}/bin/python3 ${./generate-clab-config.py} \
+                "$OUTPUT_JSON" "$TOPO_OUT" "$BRIDGES_OUT"
           '';
         };
     };

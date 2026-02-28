@@ -1,6 +1,7 @@
 { lib, ... }:
 {
   bridges = [
+    "br07c59c07fb"
     "br0d43c69b49"
     "br26ec11ee85"
     "br3499ea248c"
@@ -10,6 +11,7 @@
     "br9182b4bf99"
     "brc4d3dcbeac"
     "brc7141be663"
+    "brd44382d7ab"
     "bre2ce62f969"
   ];
 }

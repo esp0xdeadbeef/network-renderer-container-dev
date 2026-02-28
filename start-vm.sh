@@ -2,6 +2,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+./run-clab-generator.sh
 touch ./nixos.qcow2
 rm -f ./nixos.qcow2
 
