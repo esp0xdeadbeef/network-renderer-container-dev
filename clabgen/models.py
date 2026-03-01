@@ -1,8 +1,7 @@
-# FILE: ./clabgen/models.py
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 
 @dataclass
@@ -13,6 +12,8 @@ class InterfaceModel:
     ll6: Optional[str] = None
     routes4: List[Dict] = field(default_factory=list)
     routes6: List[Dict] = field(default_factory=list)
+    kind: Optional[str] = None
+    upstream: Optional[str] = None
 
 
 @dataclass
@@ -28,7 +29,7 @@ class NodeModel:
 class LinkModel:
     name: str
     kind: str
-    endpoints: Dict[str, str]  # unit -> linkKey
+    endpoints: Dict[str, Dict[str, Any]]
 
 
 @dataclass
@@ -38,3 +39,4 @@ class SiteModel:
     nodes: Dict[str, NodeModel]
     links: Dict[str, LinkModel]
     single_access: str
+    domains: Dict[str, Any]

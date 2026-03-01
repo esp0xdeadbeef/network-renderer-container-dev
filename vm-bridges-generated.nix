@@ -1,17 +1,16 @@
 { lib, ... }:
 {
   bridges = [
-    "br07c59c07fb"
-    "br0d43c69b49"
-    "br26ec11ee85"
-    "br3499ea248c"
-    "br6711e73769"
-    "br749a740b5a"
-    "br7e74d8e427"
-    "br9182b4bf99"
-    "brc4d3dcbeac"
-    "brc7141be663"
-    "brd44382d7ab"
-    "bre2ce62f969"
+    "br-16ea23389fed"
+    "br-26ec11ee8593"
+    "br-3ce9d861e57e"
+    "br-77d61d0336e9"
+    "br-9182b4bf99e9"
+    "br-9c185f67fbf1"
+    "br-b5ead8f8b026"
+    "br-c1256c2fa4ca"
+    "br-c4d3dcbeac03"
+    "br-f1d93d309958"
+    "br-fc32f620732c"
   ];
 }
