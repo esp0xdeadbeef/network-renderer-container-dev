@@ -13,7 +13,9 @@ def build_eth_index(site: SiteModel) -> Dict[str, Dict[str, int]]:
     for unit in site.nodes.keys():
         eth_index[unit] = {}
 
-    counters: Dict[str, int] = {u: 0 for u in site.nodes.keys()}
+    # Reserve eth0 for containerlab management NIC.
+    # Dataplane interfaces start at eth1.
+    counters: Dict[str, int] = {u: 1 for u in site.nodes.keys()}
 
     # deterministic ordering
     for link_name in sorted(site.links.keys()):

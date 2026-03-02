@@ -1,59 +1,45 @@
-from __future__ import annotations
+# FILE: ./clabgen/nodes.py
 
-from typing import Dict
+from typing import Dict, Any
 
+from .linux_router import render_linux_router
+from .internet_responder import render_internet_responder
 from .models import NodeModel
 
 
-def _iface_config(iface, ifname: str) -> str:
-    lines = [f"auto {ifname}", f"iface {ifname} inet static"]
+def _model_to_dict(node: NodeModel) -> Dict[str, Any]:
+    interfaces: Dict[str, Any] = {}
 
-    if iface.addr4:
-        lines.append(f"    address {iface.addr4}")
-
-    lines.append(f"iface {ifname} inet6 static")
-
-    if iface.addr6:
-        lines.append(f"    address {iface.addr6}")
-
-    if iface.ll6:
-        lines.append(f"    up ip -6 addr add {iface.ll6} dev {ifname}")
-
-    return "\n".join(lines)
-
-
-def render_node(node: NodeModel, eth_map: Dict[str, int]) -> Dict:
-    exec_cmds = []
-    network_cfg_lines = []
-
-    for link_name, iface in node.interfaces.items():
-        if link_name not in eth_map:
-            continue
-
-        eth = eth_map[link_name]
-        ifname = f"eth{eth}"
-
-        network_cfg_lines.append(_iface_config(iface, ifname))
-
-        for route in iface.routes4:
-            dst = route.get("dst")
-            via = route.get("via4")
-            if dst and via:
-                exec_cmds.append(f"ip route add {dst} via {via} dev {ifname}")
-            elif dst:
-                exec_cmds.append(f"ip route add {dst} dev {ifname}")
-
-        for route in iface.routes6:
-            dst = route.get("dst")
-            via = route.get("via6")
-            if dst and via:
-                exec_cmds.append(f"ip -6 route add {dst} via {via} dev {ifname}")
-            elif dst:
-                exec_cmds.append(f"ip -6 route add {dst} dev {ifname}")
+    for name, iface in node.interfaces.items():
+        interfaces[name] = {
+            "name": iface.name,
+            "addr4": iface.addr4,
+            "addr6": iface.addr6,
+            "ll6": iface.ll6,
+            "routes4": iface.routes4,
+            "routes6": iface.routes6,
+            "kind": iface.kind,
+            "upstream": iface.upstream,
+        }
 
     return {
-        "kind": "linux",
-        "image": "frrouting/frr:latest",
-        "network-mode": "none",
-        "exec": exec_cmds,
+        "name": node.name,
+        "role": node.role,
+        "routing_domain": node.routing_domain,
+        "interfaces": interfaces,
+        "containers": list(node.containers),
+    }
+
+
+def render_node(node: NodeModel, eth_map: Dict[str, int]) -> Dict[str, Any]:
+    node_dict = _model_to_dict(node)
+
+    if node.role == "internet-responder":
+        rendered = render_internet_responder(node_dict["name"])
+    else:
+        rendered = render_linux_router(node_dict, eth_map)
+
+    # containerlab node definition must contain ONLY supported fields
+    return {
+        "exec": rendered.get("exec", []),
     }

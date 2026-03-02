@@ -5,7 +5,7 @@ import copy
 import json
 from pathlib import Path
 
-from .models import SiteModel, NodeModel
+from .models import SiteModel
 from .nodes import render_node
 from .links import build_eth_index, short_bridge
 from .isp import ensure_isp_node
@@ -24,8 +24,7 @@ def _load_raw_site(site: SiteModel) -> Dict:
         data = json.load(f)
 
     return (
-        data
-        .get("sites", {})
+        data.get("sites", {})
         .get(site.enterprise, {})
         .get(site.site, {})
     )
@@ -54,7 +53,7 @@ def generate_topology(site: SiteModel) -> Dict:
             "topology": {
                 "defaults": {
                     "kind": "linux",
-                    "image": "frrouting/frr:latest",
+                    "image": "clab-frr-plus-tooling:latest",
                     "network-mode": "none",
                 },
                 "nodes": {},
@@ -106,6 +105,7 @@ def generate_topology(site: SiteModel) -> Dict:
         rendered = render_node(node, eth_index.get(unit, {}))
         rendered_nodes[full_name] = _stringify_exec(rendered)
 
+    # ALWAYS render links as bridges (containerlab VM requires explicit bridges)
     for link_name, link in site.links.items():
         eps = list(link.endpoints.keys())
         if len(eps) != 2:
@@ -135,7 +135,7 @@ def generate_topology(site: SiteModel) -> Dict:
         "topology": {
             "defaults": {
                 "kind": "linux",
-                "image": "frrouting/frr:latest",
+                "image": "clab-frr-plus-tooling:latest",
                 "network-mode": "none",
             },
             "nodes": rendered_nodes,

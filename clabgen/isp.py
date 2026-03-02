@@ -10,7 +10,7 @@ def ensure_isp_node(rendered_nodes: Dict[str, Dict], full_name: str, _) -> None:
 
     rendered_nodes[full_name] = {
         "kind": "linux",
-        "image": "frrouting/frr:latest",
+        "image": "clab-frr-plus-tooling:latest",
         "network-mode": "none",
         "exec": [],
     }
