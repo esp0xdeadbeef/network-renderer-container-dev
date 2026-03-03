@@ -1,7 +1,6 @@
 *.qcow2
 clab-fabric/*
 clab-fabric/
-fabric.clab.yml
 
 # Python
 __pycache__/

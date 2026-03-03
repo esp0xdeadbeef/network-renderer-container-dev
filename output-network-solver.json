@@ -556,16 +556,16 @@
             "carrier": "wan",
             "endpoints": {
               "s-router-core": {
-                "addr4": "10.19.0.100/31",
-                "addr6": "fd42:dead:beef:1900:0:0:0:64/127",
+                "addr4": "10.19.0.101/30",
+                "addr6": "fd42:dead:beef:1900:0:0:0:65/126",
                 "export": true,
                 "gateway": true,
-                "ll6": "fe80:0:0:0:0:0:0:1/128"
+                "ll6": "fe80:0:0:0:0:0:0:66/128"
               },
               "wan-peer-s-router-core-default": {
-                "addr4": "10.19.0.101/31",
-                "addr6": "fd42:dead:beef:1900:0:0:0:65/127",
-                "ll6": "fe80:0:0:0:0:0:0:3e9/128"
+                "addr4": "10.19.0.102/30",
+                "addr6": "fd42:dead:beef:1900:0:0:0:66/126",
+                "ll6": "fe80:0:0:0:0:0:0:67/128"
               }
             },
             "kind": "wan",
@@ -738,27 +738,22 @@
               },
               "wan-s-router-core-default": {
                 "acceptRA": false,
-                "addr4": "10.19.0.100/31",
-                "addr6": "fd42:dead:beef:1900:0:0:0:64/127",
+                "addr4": null,
+                "addr6": "fd42:dead:beef:1900:0:0:0:65/126",
                 "addr6Public": null,
                 "carrier": "wan",
-                "connected4": [
-                  {
-                    "dst": "10.19.0.100/31",
-                    "proto": "connected"
-                  }
-                ],
+                "connected4": [],
                 "connected6": [
                   {
-                    "dst": "fd42:dead:beef:1900:0:0:0:64/127",
+                    "dst": "fd42:dead:beef:1900:0:0:0:65/126",
                     "proto": "connected"
                   }
                 ],
-                "dhcp": false,
+                "dhcp": true,
                 "export": true,
                 "gateway": true,
                 "kind": "wan",
-                "ll6": "fe80:0:0:0:0:0:0:1/128",
+                "ll6": "fe80:0:0:0:0:0:0:66/128",
                 "overlay": null,
                 "ra6Prefixes": [],
                 "routes4": [
@@ -1043,27 +1038,22 @@
             "interfaces": {
               "wan-s-router-core-default": {
                 "acceptRA": false,
-                "addr4": "10.19.0.101/31",
-                "addr6": "fd42:dead:beef:1900:0:0:0:65/127",
+                "addr4": null,
+                "addr6": "fd42:dead:beef:1900:0:0:0:66/126",
                 "addr6Public": null,
                 "carrier": "wan",
-                "connected4": [
-                  {
-                    "dst": "10.19.0.101/31",
-                    "proto": "connected"
-                  }
-                ],
+                "connected4": [],
                 "connected6": [
                   {
-                    "dst": "fd42:dead:beef:1900:0:0:0:65/127",
+                    "dst": "fd42:dead:beef:1900:0:0:0:66/126",
                     "proto": "connected"
                   }
                 ],
-                "dhcp": false,
+                "dhcp": true,
                 "export": false,
                 "gateway": false,
                 "kind": "wan",
-                "ll6": "fe80:0:0:0:0:0:0:3e9/128",
+                "ll6": "fe80:0:0:0:0:0:0:67/128",
                 "overlay": null,
                 "ra6Prefixes": [],
                 "routes4": [
@@ -1072,19 +1062,19 @@
                   },
                   {
                     "dst": "10.19.0.1/32",
-                    "via4": "10.19.0.100"
+                    "via4": "10.19.0.101"
                   },
                   {
                     "dst": "10.19.0.2/32",
-                    "via4": "10.19.0.100"
+                    "via4": "10.19.0.101"
                   },
                   {
                     "dst": "10.19.0.3/32",
-                    "via4": "10.19.0.100"
+                    "via4": "10.19.0.101"
                   },
                   {
                     "dst": "10.19.0.4/32",
-                    "via4": "10.19.0.100"
+                    "via4": "10.19.0.101"
                   }
                 ],
                 "routes6": [
@@ -1093,19 +1083,19 @@
                   },
                   {
                     "dst": "fd42:dead:beef:1900:0:0:0:1/128",
-                    "via6": "fd42:dead:beef:1900:0:0:0:64"
+                    "via6": "fd42:dead:beef:1900:0:0:0:65"
                   },
                   {
                     "dst": "fd42:dead:beef:1900:0:0:0:2/128",
-                    "via6": "fd42:dead:beef:1900:0:0:0:64"
+                    "via6": "fd42:dead:beef:1900:0:0:0:65"
                   },
                   {
                     "dst": "fd42:dead:beef:1900:0:0:0:3/128",
-                    "via6": "fd42:dead:beef:1900:0:0:0:64"
+                    "via6": "fd42:dead:beef:1900:0:0:0:65"
                   },
                   {
                     "dst": "fd42:dead:beef:1900:0:0:0:4/128",
-                    "via6": "fd42:dead:beef:1900:0:0:0:64"
+                    "via6": "fd42:dead:beef:1900:0:0:0:65"
                   }
                 ],
                 "tenant": null,
@@ -1129,16 +1119,16 @@
                 "carrier": "wan",
                 "endpoints": {
                   "s-router-core": {
-                    "addr4": "10.19.0.100/31",
-                    "addr6": "fd42:dead:beef:1900:0:0:0:64/127",
+                    "addr4": "10.19.0.101/30",
+                    "addr6": "fd42:dead:beef:1900:0:0:0:65/126",
                     "export": true,
                     "gateway": true,
-                    "ll6": "fe80:0:0:0:0:0:0:1/128"
+                    "ll6": "fe80:0:0:0:0:0:0:66/128"
                   },
                   "wan-peer-s-router-core-default": {
-                    "addr4": "10.19.0.101/31",
-                    "addr6": "fd42:dead:beef:1900:0:0:0:65/127",
-                    "ll6": "fe80:0:0:0:0:0:0:3e9/128"
+                    "addr4": "10.19.0.102/30",
+                    "addr6": "fd42:dead:beef:1900:0:0:0:66/126",
+                    "ll6": "fe80:0:0:0:0:0:0:67/128"
                   }
                 },
                 "kind": "wan",
@@ -1419,27 +1409,22 @@
                 },
                 "wan-s-router-core-default": {
                   "acceptRA": false,
-                  "addr4": "10.19.0.100/31",
-                  "addr6": "fd42:dead:beef:1900:0:0:0:64/127",
+                  "addr4": null,
+                  "addr6": "fd42:dead:beef:1900:0:0:0:65/126",
                   "addr6Public": null,
                   "carrier": "wan",
-                  "connected4": [
-                    {
-                      "dst": "10.19.0.100/31",
-                      "proto": "connected"
-                    }
-                  ],
+                  "connected4": [],
                   "connected6": [
                     {
-                      "dst": "fd42:dead:beef:1900:0:0:0:64/127",
+                      "dst": "fd42:dead:beef:1900:0:0:0:65/126",
                       "proto": "connected"
                     }
                   ],
-                  "dhcp": false,
+                  "dhcp": true,
                   "export": true,
                   "gateway": true,
                   "kind": "wan",
-                  "ll6": "fe80:0:0:0:0:0:0:1/128",
+                  "ll6": "fe80:0:0:0:0:0:0:66/128",
                   "overlay": null,
                   "ra6Prefixes": [],
                   "routes4": [
@@ -2054,27 +2039,22 @@
               "interfaces": {
                 "wan-s-router-core-default": {
                   "acceptRA": false,
-                  "addr4": "10.19.0.101/31",
-                  "addr6": "fd42:dead:beef:1900:0:0:0:65/127",
+                  "addr4": null,
+                  "addr6": "fd42:dead:beef:1900:0:0:0:66/126",
                   "addr6Public": null,
                   "carrier": "wan",
-                  "connected4": [
-                    {
-                      "dst": "10.19.0.101/31",
-                      "proto": "connected"
-                    }
-                  ],
+                  "connected4": [],
                   "connected6": [
                     {
-                      "dst": "fd42:dead:beef:1900:0:0:0:65/127",
+                      "dst": "fd42:dead:beef:1900:0:0:0:66/126",
                       "proto": "connected"
                     }
                   ],
-                  "dhcp": false,
+                  "dhcp": true,
                   "export": false,
                   "gateway": false,
                   "kind": "wan",
-                  "ll6": "fe80:0:0:0:0:0:0:3e9/128",
+                  "ll6": "fe80:0:0:0:0:0:0:67/128",
                   "overlay": null,
                   "ra6Prefixes": [],
                   "routes4": [
@@ -2083,19 +2063,19 @@
                     },
                     {
                       "dst": "10.19.0.1/32",
-                      "via4": "10.19.0.100"
+                      "via4": "10.19.0.101"
                     },
                     {
                       "dst": "10.19.0.2/32",
-                      "via4": "10.19.0.100"
+                      "via4": "10.19.0.101"
                     },
                     {
                       "dst": "10.19.0.3/32",
-                      "via4": "10.19.0.100"
+                      "via4": "10.19.0.101"
                     },
                     {
                       "dst": "10.19.0.4/32",
-                      "via4": "10.19.0.100"
+                      "via4": "10.19.0.101"
                     }
                   ],
                   "routes6": [
@@ -2104,19 +2084,19 @@
                     },
                     {
                       "dst": "fd42:dead:beef:1900:0:0:0:1/128",
-                      "via6": "fd42:dead:beef:1900:0:0:0:64"
+                      "via6": "fd42:dead:beef:1900:0:0:0:65"
                     },
                     {
                       "dst": "fd42:dead:beef:1900:0:0:0:2/128",
-                      "via6": "fd42:dead:beef:1900:0:0:0:64"
+                      "via6": "fd42:dead:beef:1900:0:0:0:65"
                     },
                     {
                       "dst": "fd42:dead:beef:1900:0:0:0:3/128",
-                      "via6": "fd42:dead:beef:1900:0:0:0:64"
+                      "via6": "fd42:dead:beef:1900:0:0:0:65"
                     },
                     {
                       "dst": "fd42:dead:beef:1900:0:0:0:4/128",
-                      "via6": "fd42:dead:beef:1900:0:0:0:64"
+                      "via6": "fd42:dead:beef:1900:0:0:0:65"
                     }
                   ],
                   "tenant": null,
@@ -2390,27 +2370,22 @@
               },
               "wan-s-router-core-default": {
                 "acceptRA": false,
-                "addr4": "10.19.0.100/31",
-                "addr6": "fd42:dead:beef:1900:0:0:0:64/127",
+                "addr4": null,
+                "addr6": "fd42:dead:beef:1900:0:0:0:65/126",
                 "addr6Public": null,
                 "carrier": "wan",
-                "connected4": [
-                  {
-                    "dst": "10.19.0.100/31",
-                    "proto": "connected"
-                  }
-                ],
+                "connected4": [],
                 "connected6": [
                   {
-                    "dst": "fd42:dead:beef:1900:0:0:0:64/127",
+                    "dst": "fd42:dead:beef:1900:0:0:0:65/126",
                     "proto": "connected"
                   }
                 ],
-                "dhcp": false,
+                "dhcp": true,
                 "export": true,
                 "gateway": true,
                 "kind": "wan",
-                "ll6": "fe80:0:0:0:0:0:0:1/128",
+                "ll6": "fe80:0:0:0:0:0:0:66/128",
                 "overlay": null,
                 "ra6Prefixes": [],
                 "routes4": [
@@ -2674,27 +2649,22 @@
             "wan-peer-s-router-core-default": {
               "wan-s-router-core-default": {
                 "acceptRA": false,
-                "addr4": "10.19.0.101/31",
-                "addr6": "fd42:dead:beef:1900:0:0:0:65/127",
+                "addr4": null,
+                "addr6": "fd42:dead:beef:1900:0:0:0:66/126",
                 "addr6Public": null,
                 "carrier": "wan",
-                "connected4": [
-                  {
-                    "dst": "10.19.0.101/31",
-                    "proto": "connected"
-                  }
-                ],
+                "connected4": [],
                 "connected6": [
                   {
-                    "dst": "fd42:dead:beef:1900:0:0:0:65/127",
+                    "dst": "fd42:dead:beef:1900:0:0:0:66/126",
                     "proto": "connected"
                   }
                 ],
-                "dhcp": false,
+                "dhcp": true,
                 "export": false,
                 "gateway": false,
                 "kind": "wan",
-                "ll6": "fe80:0:0:0:0:0:0:3e9/128",
+                "ll6": "fe80:0:0:0:0:0:0:67/128",
                 "overlay": null,
                 "ra6Prefixes": [],
                 "routes4": [
@@ -2703,19 +2673,19 @@
                   },
                   {
                     "dst": "10.19.0.1/32",
-                    "via4": "10.19.0.100"
+                    "via4": "10.19.0.101"
                   },
                   {
                     "dst": "10.19.0.2/32",
-                    "via4": "10.19.0.100"
+                    "via4": "10.19.0.101"
                   },
                   {
                     "dst": "10.19.0.3/32",
-                    "via4": "10.19.0.100"
+                    "via4": "10.19.0.101"
                   },
                   {
                     "dst": "10.19.0.4/32",
-                    "via4": "10.19.0.100"
+                    "via4": "10.19.0.101"
                   }
                 ],
                 "routes6": [
@@ -2724,19 +2694,19 @@
                   },
                   {
                     "dst": "fd42:dead:beef:1900:0:0:0:1/128",
-                    "via6": "fd42:dead:beef:1900:0:0:0:64"
+                    "via6": "fd42:dead:beef:1900:0:0:0:65"
                   },
                   {
                     "dst": "fd42:dead:beef:1900:0:0:0:2/128",
-                    "via6": "fd42:dead:beef:1900:0:0:0:64"
+                    "via6": "fd42:dead:beef:1900:0:0:0:65"
                   },
                   {
                     "dst": "fd42:dead:beef:1900:0:0:0:3/128",
-                    "via6": "fd42:dead:beef:1900:0:0:0:64"
+                    "via6": "fd42:dead:beef:1900:0:0:0:65"
                   },
                   {
                     "dst": "fd42:dead:beef:1900:0:0:0:4/128",
-                    "via6": "fd42:dead:beef:1900:0:0:0:64"
+                    "via6": "fd42:dead:beef:1900:0:0:0:65"
                   }
                 ],
                 "tenant": null,
@@ -2783,16 +2753,16 @@
               "carrier": "wan",
               "endpoints": {
                 "s-router-core": {
-                  "addr4": "10.19.0.100/31",
-                  "addr6": "fd42:dead:beef:1900:0:0:0:64/127",
+                  "addr4": "10.19.0.101/30",
+                  "addr6": "fd42:dead:beef:1900:0:0:0:65/126",
                   "export": true,
                   "gateway": true,
-                  "ll6": "fe80:0:0:0:0:0:0:1/128"
+                  "ll6": "fe80:0:0:0:0:0:0:66/128"
                 },
                 "wan-peer-s-router-core-default": {
-                  "addr4": "10.19.0.101/31",
-                  "addr6": "fd42:dead:beef:1900:0:0:0:65/127",
-                  "ll6": "fe80:0:0:0:0:0:0:3e9/128"
+                  "addr4": "10.19.0.102/30",
+                  "addr6": "fd42:dead:beef:1900:0:0:0:66/126",
+                  "ll6": "fe80:0:0:0:0:0:0:67/128"
                 }
               },
               "kind": "wan",
