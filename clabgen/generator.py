@@ -117,6 +117,8 @@ def generate_topology(site: SiteModel) -> Dict:
             continue
 
         node_dict = {
+            "name": unit,
+            "role": node.role or "",
             "interfaces": {
                 ifname: {
                     "addr4": iface.addr4,
