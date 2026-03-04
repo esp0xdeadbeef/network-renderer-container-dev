@@ -24,8 +24,6 @@ topology:
         - ip -6 addr replace fd42:dead:beef:1000::/127 dev eth1
         - ip route replace 10.10.0.0/31 dev eth1 scope link
         - ip -6 route replace fd42:dead:beef:1000::/127 dev eth1
-        - ip route replace default via 10.10.0.1 dev eth1
-        - ip -6 route replace default via fd42:dead:beef:1000:0:0:0:1 dev eth1
 
     # ============================================================
     # POLICY
@@ -45,8 +43,20 @@ topology:
       - ip -6 route replace fd42:dead:beef:1000::/127 dev eth1
       - ip route replace 10.10.0.4/31 dev eth2 scope link
       - ip -6 route replace fd42:dead:beef:1000::4/127 dev eth2
-      - ip route replace default via 10.10.0.5 dev eth2
-      - ip -6 route replace default via fd42:dead:beef:1000:0:0:0:5 dev eth2
+
+    # ============================================================
+    # CORE
+    # ============================================================
+    esp0xdeadbeef-site-a-s-router-core:
+      kind: linux
+      image: clab-frr-plus-tooling:latest
+      exec:
+      - sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$i"; done'
+      - ip link set eth1 up
+      - ip addr replace 10.10.0.2/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1000::2/127 dev eth1
+      - ip route replace 10.10.0.2/31 dev eth1 scope link
+      - ip -6 route replace fd42:dead:beef:1000::2/127 dev eth1
 
 
     # ============================================================
@@ -79,35 +89,7 @@ topology:
         - ip route replace default via 10.10.0.2 dev eth1
         - ip -6 route replace default via fd42:dead:beef:1000::2 dev eth1
 
-    # ============================================================
-    # CORE
-    # ============================================================
-    esp0xdeadbeef-site-a-s-router-core:
-      exec:
-        - sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$i"; done'
-        - ip link set eth1 up
-        - ip link set eth2 up
 
-        # upstream-selector link
-        - ip addr replace 10.10.0.2/31 dev eth1
-        - ip -6 addr replace fd42:dead:beef:1000::2/127 dev eth1
-        - ip route replace 10.10.0.2/31 dev eth1 scope link
-        - ip -6 route replace fd42:dead:beef:1000::2/127 dev eth1
-
-        # WAN P2P
-        - ip addr replace 10.19.0.64/31 dev eth2
-        - ip -6 addr replace fd42:dead:beef:1900::64/127 dev eth2
-        - ip route replace 10.19.0.64/31 dev eth2 scope link
-        - ip -6 route replace fd42:dead:beef:1900::64/127 dev eth2
-
-        # internal aggregation
-        - ip route replace 10.10.0.0/16 via 10.10.0.3 dev eth1
-        - ip route replace 10.20.0.0/16 via 10.10.0.3 dev eth1
-        - ip -6 route replace fd42:dead:beef:1000::/56 via fd42:dead:beef:1000::3 dev eth1
-
-        # default to WAN peer
-        - ip route replace default via 10.19.0.65 dev eth2
-        - ip -6 route replace default via fd42:dead:beef:1900::65 dev eth2
 
     # ============================================================
     # WAN PEER (nftables-based SNAT)
@@ -156,7 +138,3 @@ topology:
     - endpoints:
         - esp0xdeadbeef-site-a-s-router-policy:eth2
         - esp0xdeadbeef-site-a-s-router-upstream-selector:eth2
-
-    - endpoints:
-        - esp0xdeadbeef-site-a-s-router-core:eth2
-        - esp0xdeadbeef-site-a-wan-peer-s-router-core-default:eth1

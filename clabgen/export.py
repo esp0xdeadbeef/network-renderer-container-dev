@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import ipaddress
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -66,6 +67,33 @@ def _collect_sites(data: Dict[str, Any]) -> List[SiteModel]:
     return results
 
 
+def _normalize_core_interfaces(node: Dict[str, Any]) -> None:
+    if node["role"] != "s-router-core":
+        return
+
+    for ifname, iface in node["interfaces"].items():
+        addr4 = iface.get("addr4")
+        if not addr4:
+            continue
+
+        net = ipaddress.ip_interface(addr4)
+
+        if net.network.prefixlen < 31:
+            base = int(net.ip) & ~1
+            new_ip = ipaddress.IPv4Address(base)
+            iface["addr4"] = f"{new_ip}/31"
+
+            peer = ipaddress.IPv4Address(base ^ 1)
+
+            iface.setdefault("routes4", [])
+            iface["routes4"].append(
+                {
+                    "to": f"{peer}/31",
+                    "scope": "link",
+                }
+            )
+
+
 def _render_node_exec(node_raw: Dict[str, Any], eth_map: Dict[str, int]) -> List[str]:
     node = {
         "name": node_raw.get("name", ""),
@@ -80,6 +108,8 @@ def _render_node_exec(node_raw: Dict[str, Any], eth_map: Dict[str, int]) -> List
             for k, v in (node_raw.get("interfaces", {}) or {}).items()
         },
     }
+
+    _normalize_core_interfaces(node)
 
     cmds: List[str] = []
     cmds += render_sysctls()
@@ -213,6 +243,8 @@ def write_outputs(
         merged_links.extend(_build_links(site, eth_index))
 
     access_node = next(n for n in merged_nodes.keys() if n.endswith("-s-router-access"))
+    policy_node = next(n for n in merged_nodes.keys() if n.endswith("-s-router-policy"))
+    core_node = next(n for n in merged_nodes.keys() if n.endswith("-s-router-core"))
 
     access_block = _render_access_block(
         access_node,
@@ -243,7 +275,6 @@ def write_outputs(
     correct += "\n  nodes:\n\n"
 
     correct += access_block
-    policy_node = next(n for n in merged_nodes.keys() if n.endswith("-s-router-policy"))
 
     policy_yaml = yaml.dump(
         {policy_node: merged_nodes[policy_node]},
@@ -261,6 +292,23 @@ def write_outputs(
 """
 
     correct += policy_yaml + "\n"
+
+    core_yaml = yaml.dump(
+        {core_node: merged_nodes[core_node]},
+        sort_keys=False,
+    )
+
+    core_yaml = "\n".join(
+        "    " + line if line else line for line in core_yaml.splitlines()
+    )
+
+    correct += """
+    # ============================================================
+    # CORE
+    # ============================================================
+"""
+
+    correct += core_yaml + "\n"
 
     correct += """
 
@@ -294,35 +342,9 @@ def write_outputs(
         - ip route replace default via 10.10.0.2 dev eth1
         - ip -6 route replace default via fd42:dead:beef:1000::2 dev eth1
 
-    # ============================================================
-    # CORE
-    # ============================================================
-    esp0xdeadbeef-site-a-s-router-core:
-      exec:
-        - sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$i"; done'
-        - ip link set eth1 up
-        - ip link set eth2 up
+"""
 
-        # upstream-selector link
-        - ip addr replace 10.10.0.2/31 dev eth1
-        - ip -6 addr replace fd42:dead:beef:1000::2/127 dev eth1
-        - ip route replace 10.10.0.2/31 dev eth1 scope link
-        - ip -6 route replace fd42:dead:beef:1000::2/127 dev eth1
-
-        # WAN P2P
-        - ip addr replace 10.19.0.64/31 dev eth2
-        - ip -6 addr replace fd42:dead:beef:1900::64/127 dev eth2
-        - ip route replace 10.19.0.64/31 dev eth2 scope link
-        - ip -6 route replace fd42:dead:beef:1900::64/127 dev eth2
-
-        # internal aggregation
-        - ip route replace 10.10.0.0/16 via 10.10.0.3 dev eth1
-        - ip route replace 10.20.0.0/16 via 10.10.0.3 dev eth1
-        - ip -6 route replace fd42:dead:beef:1000::/56 via fd42:dead:beef:1000::3 dev eth1
-
-        # default to WAN peer
-        - ip route replace default via 10.19.0.65 dev eth2
-        - ip -6 route replace default via fd42:dead:beef:1900::65 dev eth2
+    correct += """
 
     # ============================================================
     # WAN PEER (nftables-based SNAT)
