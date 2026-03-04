@@ -78,7 +78,7 @@ def _render_node_exec(node_raw: Dict[str, Any], eth_map: Dict[str, int]) -> List
                 "routes6": v.get("routes6", []),
             }
             for k, v in (node_raw.get("interfaces", {}) or {}).items()
-        }
+        },
     }
 
     cmds: List[str] = []
@@ -91,7 +91,9 @@ def _render_node_exec(node_raw: Dict[str, Any], eth_map: Dict[str, int]) -> List
     return cmds
 
 
-def _build_nodes(site: SiteModel, eth_index: Dict[str, Dict[str, int]]) -> Dict[str, Any]:
+def _build_nodes(
+    site: SiteModel, eth_index: Dict[str, Dict[str, int]]
+) -> Dict[str, Any]:
     ent = site.enterprise
     sid = site.site
 
@@ -111,7 +113,7 @@ def _build_nodes(site: SiteModel, eth_index: Dict[str, Dict[str, int]]) -> Dict[
                     "routes6": iface.routes6,
                 }
                 for ifname, iface in node_model.interfaces.items()
-            }
+            },
         }
 
         exec_cmds = _render_node_exec(node_raw, eth_index.get(node_name, {}))
@@ -125,7 +127,9 @@ def _build_nodes(site: SiteModel, eth_index: Dict[str, Dict[str, int]]) -> Dict[
     return out
 
 
-def _build_links(site: SiteModel, eth_index: Dict[str, Dict[str, int]]) -> List[Dict[str, Any]]:
+def _build_links(
+    site: SiteModel, eth_index: Dict[str, Dict[str, int]]
+) -> List[Dict[str, Any]]:
     ent = site.enterprise
     sid = site.site
 
@@ -208,36 +212,39 @@ def write_outputs(
 
         merged_links.extend(_build_links(site, eth_index))
 
-    access_node = next(
-        n for n in merged_nodes.keys()
-        if n.endswith("-s-router-access")
-    )
+    access_node = next(n for n in merged_nodes.keys() if n.endswith("-s-router-access"))
 
     access_block = _render_access_block(
         access_node,
         merged_nodes[access_node]["exec"],
     )
 
-    correct = '''# fabric.clab.yml
-name: fabric
+    defaults_yaml = yaml.dump(
+        {
+            "topology": {
+                "defaults": {
+                    "kind": "linux",
+                    "image": "clab-frr-plus-tooling:latest",
+                    "sysctls": {
+                        "net.ipv4.ip_forward": "1",
+                        "net.ipv6.conf.all.forwarding": "1",
+                        "net.ipv4.conf.all.rp_filter": "0",
+                        "net.ipv4.conf.default.rp_filter": "0",
+                    },
+                }
+            }
+        },
+        sort_keys=False,
+    )
 
-topology:
-  defaults:
-    kind: linux
-    image: clab-frr-plus-tooling:latest
-    sysctls:
-      net.ipv4.ip_forward: "1"
-      net.ipv6.conf.all.forwarding: "1"
-      net.ipv4.conf.all.rp_filter: "0"
-      net.ipv4.conf.default.rp_filter: "0"
-
-  nodes:
-
-'''
+    correct = "# fabric.clab.yml\n"
+    correct += "name: fabric\n\n"
+    correct += defaults_yaml
+    correct += "\n  nodes:\n\n"
 
     correct += access_block
 
-    correct += '''
+    correct += """
     # ============================================================
     # POLICY
     # ============================================================
@@ -358,7 +365,7 @@ topology:
         - ip route flush cache
         - ip -6 route flush cache
 
-'''
+"""
 
     correct += _render_links_endpoints_only(merged_links)
 
@@ -367,6 +374,6 @@ topology:
     bridges = _collect_bridges(sites)
     Path(bridges_out).write_text(
         "{ lib, ... }:\n{\n  bridges = [\n"
-        + "\n".join(f'    \"{b}\"' for b in bridges)
+        + "\n".join(f'    "{b}"' for b in bridges)
         + "\n  ];\n}\n"
     )
