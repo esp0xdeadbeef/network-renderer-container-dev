@@ -1,4 +1,3 @@
-# ./flake.nix
 {
   description = "Containerlab VM host + network renderer";
 
@@ -61,6 +60,9 @@
             jq empty "$OUTPUT_JSON"
 
             echo "[*] Generating Containerlab topology..."
+
+            export PYTHONPYCACHEPREFIX=/tmp/python-cache
+
             PYTHONPATH="$(pwd)" \
               ${pythonEnv}/bin/python3 ${./generate-clab-config.py} \
                 "$OUTPUT_JSON" "$TOPO_OUT" "$BRIDGES_OUT"
