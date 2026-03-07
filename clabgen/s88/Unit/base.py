@@ -5,12 +5,12 @@ from typing import Dict, List, Tuple, Any, Callable
 import hashlib
 
 from clabgen.models import SiteModel, NodeModel
-from clabgen.Unit.access import render as render_access
-from clabgen.Unit.client import render as render_client
-from clabgen.Unit.core import render as render_core
-from clabgen.Unit.policy import render as render_policy
-from clabgen.Unit.upstream_selector import render as render_upstream_selector
-from clabgen.Unit.wan_peer import render as render_wan_peer
+from clabgen.s88.Unit.access import render as render_access
+from clabgen.s88.Unit.client import render as render_client
+from clabgen.s88.Unit.core import render as render_core
+from clabgen.s88.Unit.policy import render as render_policy
+from clabgen.s88.Unit.upstream_selector import render as render_upstream_selector
+from clabgen.s88.Unit.wan_peer import render as render_wan_peer
 
 
 NodeRenderer = Callable[[str, NodeModel, Dict[str, int]], Dict[str, Any]]

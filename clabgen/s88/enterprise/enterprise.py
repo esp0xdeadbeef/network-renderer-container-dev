@@ -9,7 +9,7 @@ from clabgen.models import SiteModel
 from clabgen.s88.enterprise.site_loader import load_sites
 from clabgen.s88.enterprise.inject_wan_peers import inject_emulated_wan_peers
 from clabgen.s88.enterprise.inject_clients import inject_clients
-from clabgen.Unit.base import render_units
+from clabgen.s88.Unit.base import render_units
 
 
 def generate_topology(site: SiteModel) -> Dict[str, Any]:
