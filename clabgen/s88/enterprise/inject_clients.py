@@ -1,4 +1,3 @@
-# ./clabgen/s88/enterprise/inject_clients.py
 from __future__ import annotations
 
 import ipaddress
@@ -6,41 +5,62 @@ import ipaddress
 from clabgen.models import SiteModel, NodeModel, InterfaceModel
 
 
-def _first_usable(network: ipaddress._BaseNetwork):
-    if network.prefixlen >= (31 if isinstance(network, ipaddress.IPv4Network) else 127):
+def _first_usable(network: ipaddress._BaseNetwork) -> ipaddress._BaseAddress:
+    if isinstance(network, ipaddress.IPv4Network):
+        if network.prefixlen >= 31:
+            return network.network_address
+        return network.network_address + 1
+
+    if network.prefixlen >= 127:
         return network.network_address
     return network.network_address + 1
 
 
-def _second_usable(network: ipaddress._BaseNetwork):
-    if network.prefixlen >= (31 if isinstance(network, ipaddress.IPv4Network) else 127):
+def _second_usable(network: ipaddress._BaseNetwork) -> ipaddress._BaseAddress:
+    if isinstance(network, ipaddress.IPv4Network):
+        if network.prefixlen >= 31:
+            return network.broadcast_address
+        return network.network_address + 2
+
+    if network.prefixlen >= 127:
         return network.broadcast_address
     return network.network_address + 2
 
 
-def _derive_client(router_cidr: str) -> tuple[str, str]:
-    iface = ipaddress.ip_interface(router_cidr)
-    net = iface.network
-    router_ip = iface.ip
+def _normalize_router_iface(
+    cidr: str,
+) -> ipaddress.IPv4Interface | ipaddress.IPv6Interface:
+    iface = ipaddress.ip_interface(cidr)
+    network = iface.network
 
-    first = _first_usable(net)
-    second = _second_usable(net)
+    if iface.ip == network.network_address:
+        iface = ipaddress.ip_interface(f"{_first_usable(network)}/{network.prefixlen}")
 
-    client = second if router_ip == first else first
+    return iface
 
-    return str(router_ip), f"{client}/{net.prefixlen}"
+
+def _derive_client_iface(cidr: str) -> tuple[str, str]:
+    router_iface = _normalize_router_iface(cidr)
+    network = router_iface.network
+    router_ip = router_iface.ip
+
+    first = _first_usable(network)
+    second = _second_usable(network)
+
+    client_ip = second if router_ip == first else first
+
+    if client_ip == router_ip:
+        raise RuntimeError(f"no distinct usable client address for {cidr}")
+
+    return str(router_ip), f"{client_ip}/{network.prefixlen}"
 
 
 def inject_clients(site: SiteModel) -> None:
-    """
-    Explicitly inject tenant client nodes for every access router tenant interface.
-    """
-
     for node_name, node in list(site.nodes.items()):
         if node.role != "access":
             continue
 
-        for ifname, iface in node.interfaces.items():
+        for ifname, iface in list(node.interfaces.items()):
             if iface.kind != "tenant":
                 continue
 
@@ -48,22 +68,30 @@ def inject_clients(site: SiteModel) -> None:
                 continue
 
             client_name = f"client-{node_name}-{ifname}"
-
             if client_name in site.nodes:
                 continue
 
-            router_v4, client_v4 = _derive_client(iface.addr4)
+            router_v4, client_v4 = _derive_client_iface(iface.addr4)
 
             routes = {
-                "ipv4": [{"dst": "0.0.0.0/0", "via4": router_v4}],
+                "ipv4": [
+                    {
+                        "dst": "0.0.0.0/0",
+                        "via4": router_v4,
+                    }
+                ],
                 "ipv6": [],
             }
 
+            client_v6: str | None = None
             if iface.addr6:
-                router_v6, client_v6 = _derive_client(iface.addr6)
-                routes["ipv6"].append({"dst": "::/0", "via6": router_v6})
-            else:
-                client_v6 = None
+                router_v6, client_v6 = _derive_client_iface(iface.addr6)
+                routes["ipv6"].append(
+                    {
+                        "dst": "::/0",
+                        "via6": router_v6,
+                    }
+                )
 
             site.nodes[client_name] = NodeModel(
                 name=client_name,
@@ -72,20 +100,13 @@ def inject_clients(site: SiteModel) -> None:
                 interfaces={
                     ifname: InterfaceModel(
                         name=ifname,
-                        kind="tenant",
                         addr4=client_v4,
                         addr6=client_v6,
+                        kind="tenant",
                         upstream=ifname,
                         routes=routes,
                     )
                 },
             )
-
-            site.links[ifname].endpoints[client_name] = {
-                "node": client_name,
-                "interface": ifname,
-                "addr4": client_v4,
-                "addr6": client_v6,
-            }
 
             print(f"WARNING {client_name} injected to the config.")

@@ -2,7 +2,7 @@
 # {
 #   "renderer": {
 #     "gitDirty": true,
-#     "gitRev": "3dcf55a081015e9dc45625e859f72a5c972fabff",
+#     "gitRev": "ccdf122993ef341caec47c5d306013b26577e6ed",
 #     "name": "network-renderer-containerlab-linux-backend",
 #     "schemaVersion": 2
 #   }
@@ -15,6 +15,36 @@ topology:
     kind: linux
     image: clab-frr-plus-tooling:latest
   nodes:
+    client-s-router-access-admin-tenant-admin:
+      kind: linux
+      image: clab-frr-plus-tooling:latest
+      exec:
+      - sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$i"; done'
+      - ip link set eth1 up
+      - ip addr replace 10.20.15.2/24 dev eth1
+      - ip -6 addr replace fd42:dead:beef:15::2/64 dev eth1
+      - ip route replace default via 10.20.15.1 dev eth1 onlink
+      - ip -6 route replace default via fd42:dead:beef:15::1 dev eth1 onlink
+    client-s-router-access-client-tenant-client:
+      kind: linux
+      image: clab-frr-plus-tooling:latest
+      exec:
+      - sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$i"; done'
+      - ip link set eth1 up
+      - ip addr replace 10.20.20.2/24 dev eth1
+      - ip -6 addr replace fd42:dead:beef:20::2/64 dev eth1
+      - ip route replace default via 10.20.20.1 dev eth1 onlink
+      - ip -6 route replace default via fd42:dead:beef:20::1 dev eth1 onlink
+    client-s-router-access-mgmt-tenant-mgmt:
+      kind: linux
+      image: clab-frr-plus-tooling:latest
+      exec:
+      - sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$i"; done'
+      - ip link set eth1 up
+      - ip addr replace 10.20.10.2/24 dev eth1
+      - ip -6 addr replace fd42:dead:beef:10::2/64 dev eth1
+      - ip route replace default via 10.20.10.1 dev eth1 onlink
+      - ip -6 route replace default via fd42:dead:beef:10::1 dev eth1 onlink
     s-router-access-admin:
       kind: linux
       image: clab-frr-plus-tooling:latest
@@ -373,33 +403,6 @@ topology:
       - nft add rule ip nat postrouting oifname "eth0" masquerade
       - ip route flush cache
       - ip -6 route flush cache
-    client-s-router-access-admin-tenant-admin:
-      kind: linux
-      image: clab-frr-plus-tooling:latest
-      exec:
-      - ip addr add 10.20.15.2/24 dev eth1
-      - ip -6 addr add fd42:dead:beef:15::2/64 dev eth1
-      - ip link set eth1 up
-      - ip route replace default via 10.20.15.1 dev eth1
-      - ip -6 route replace default via fd42:dead:beef:15::1 dev eth1
-    client-s-router-access-client-tenant-client:
-      kind: linux
-      image: clab-frr-plus-tooling:latest
-      exec:
-      - ip addr add 10.20.20.2/24 dev eth1
-      - ip -6 addr add fd42:dead:beef:20::2/64 dev eth1
-      - ip link set eth1 up
-      - ip route replace default via 10.20.20.1 dev eth1
-      - ip -6 route replace default via fd42:dead:beef:20::1 dev eth1
-    client-s-router-access-mgmt-tenant-mgmt:
-      kind: linux
-      image: clab-frr-plus-tooling:latest
-      exec:
-      - ip addr add 10.20.10.2/24 dev eth1
-      - ip -6 addr add fd42:dead:beef:10::2/64 dev eth1
-      - ip link set eth1 up
-      - ip route replace default via 10.20.10.1 dev eth1
-      - ip -6 route replace default via fd42:dead:beef:10::1 dev eth1
   links:
   - endpoints:
     - s-router-access-admin:eth1
@@ -450,20 +453,20 @@ topology:
       clab.link.type: bridge
       clab.link.bridge: br-e035268ceff9
   - endpoints:
-    - s-router-access-admin:eth2
     - client-s-router-access-admin-tenant-admin:eth1
+    - s-router-access-admin:eth2
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-17893598c586
   - endpoints:
-    - s-router-access-client:eth2
     - client-s-router-access-client-tenant-client:eth1
+    - s-router-access-client:eth2
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-3fbc5b75dfbd
   - endpoints:
-    - s-router-access-mgmt:eth2
     - client-s-router-access-mgmt-tenant-mgmt:eth1
+    - s-router-access-mgmt:eth2
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-71ddb5e135c4
