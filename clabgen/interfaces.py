@@ -5,7 +5,6 @@ def _is_virtual_interface(iface: Dict[str, Any]) -> bool:
     return bool(
         iface.get("virtual") is True
         or iface.get("logical") is True
-        or iface.get("kind") == "tenant"
         or iface.get("type") == "logical"
         or iface.get("carrier") == "logical"
     )
@@ -24,9 +23,8 @@ def render_interfaces(node: Dict[str, Any], eth_map: Dict[str, int]) -> List[str
         eth = f"eth{eth_map[logical_if]}"
 
         if _is_virtual_interface(iface):
-            cmds.append(f"ip link show {eth} >/dev/null 2>&1 || ip link add {eth} type dummy")
+            cmds.append(f"sh -c 'ip link show {eth} >/dev/null 2>&1 || ip link add {eth} type dummy'")
 
-        # bring interface up (no per-if sysctl; global rp_filter loop already rendered)
         cmds.append(f"ip link set {eth} up")
 
     return cmds

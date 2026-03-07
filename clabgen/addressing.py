@@ -11,6 +11,43 @@ def _canon_v6(addr: str) -> str:
         return addr
 
 
+def _is_network_address(addr: str) -> bool:
+    try:
+        iface = ipaddress.ip_interface(addr)
+    except Exception:
+        return False
+    return iface.ip == iface.network.network_address
+
+
+def _first_usable_host(addr: str) -> str:
+    iface = ipaddress.ip_interface(addr)
+    net = iface.network
+
+    if isinstance(net, ipaddress.IPv4Network):
+        if net.prefixlen >= 31:
+            return str(iface)
+        hosts = net.hosts()
+        first = next(hosts)
+        return f"{first}/{net.prefixlen}"
+
+    if net.prefixlen >= 127:
+        return str(iface)
+
+    hosts = net.hosts()
+    first = next(hosts)
+    return f"{first}/{net.prefixlen}"
+
+
+def _normalize_l3_addr(addr: str, iface: Dict[str, Any]) -> str:
+    if not isinstance(addr, str) or not addr:
+        return addr
+
+    if iface.get("kind") == "tenant" and _is_network_address(addr):
+        return _first_usable_host(addr)
+
+    return addr
+
+
 def _p2p_peer(addr: str) -> str | None:
     try:
         iface = ipaddress.ip_interface(addr)
@@ -47,6 +84,7 @@ def render_addressing(node: Dict[str, Any], eth_map: Dict[str, int]) -> List[str
         ll6 = iface.get("ll6")
 
         if isinstance(addr4, str) and addr4:
+            addr4 = _normalize_l3_addr(addr4, iface)
             peer = _p2p_peer(addr4)
             if peer:
                 ip = ipaddress.ip_interface(addr4).ip
@@ -57,6 +95,7 @@ def render_addressing(node: Dict[str, Any], eth_map: Dict[str, int]) -> List[str
 
         if isinstance(addr6, str) and addr6:
             canon = _canon_v6(addr6)
+            canon = _normalize_l3_addr(canon, iface)
             peer = _p2p_peer(canon)
             if peer:
                 ip = ipaddress.ip_interface(canon).ip

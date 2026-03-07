@@ -1,4 +1,3 @@
-# ./clabgen/generator.py
 from __future__ import annotations
 
 from typing import Dict, List, Set, Any, Tuple
@@ -269,13 +268,14 @@ def generate_topology(site: SiteModel) -> Dict[str, Any]:
         projected_links.add(link_name)
 
     for tenant, members in sorted(tenant_groups.items()):
-        if len(members) < 2:
-            continue
-
         bridge = short_bridge(f"{site.enterprise}-{site.site}-tenant-{tenant}")
         bridges.add(bridge)
 
         endpoints = [f"{node}:eth{eth}" for node, eth in members]
+
+        if len(endpoints) == 1:
+            host_if = f"veth-{bridge}"
+            endpoints.append(f"host:{host_if}")
 
         rendered_links.append(
             {
