@@ -4,7 +4,7 @@ docker-clab-frr-plus-tooling/build.sh
 
 containerlab deploy -t fabric.clab.yml -d --reconfigure
 
-for c in $(docker ps --format '{{.Names}}' | grep clab-fabric-esp0xdeadbeef-site-a)
+for c in $(docker ps --format '{{.Names}}' | grep clab-fabric)
 do
   echo "=================================================="
   echo "NODE: $c"

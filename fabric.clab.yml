@@ -1,15 +1,15 @@
 # --- provenance ---
 # {
 #   "renderer": {
-#     "gitDirty": false,
-#     "gitRev": "45316d00bf8c62f2b54123034272c248de916906",
+#     "gitDirty": true,
+#     "gitRev": "92f5fd2da8969339f82923be32f0887ccb4ff79f",
 #     "name": "network-renderer-containerlab-linux-backend",
 #     "schemaVersion": 2
 #   },
 #   "solver": {
 #     "solver": {
-#       "gitDirty": false,
-#       "gitRev": "45316d00bf8c62f2b54123034272c248de916906"
+#       "gitDirty": true,
+#       "gitRev": "92f5fd2da8969339f82923be32f0887ccb4ff79f"
 #     }
 #   }
 # }
@@ -20,13 +20,8 @@ topology:
   defaults:
     kind: linux
     image: clab-frr-plus-tooling:latest
-    sysctls:
-      net.ipv4.ip_forward: '1'
-      net.ipv6.conf.all.forwarding: '1'
-      net.ipv4.conf.all.rp_filter: '0'
-      net.ipv4.conf.default.rp_filter: '0'
   nodes:
-    esp0xdeadbeef-site-a-s-router-access-admin:
+    s-router-access-admin:
       kind: linux
       image: clab-frr-plus-tooling:latest
       exec:
@@ -61,7 +56,7 @@ topology:
       - ip -6 route replace fd42:dead:beef:1000::a/127 via fd42:dead:beef:1000:0:0:0:1
         dev eth1 onlink
       - ip route replace default via 10.10.0.1 dev eth1 onlink
-    esp0xdeadbeef-site-a-s-router-access-client:
+    s-router-access-client:
       kind: linux
       image: clab-frr-plus-tooling:latest
       exec:
@@ -96,7 +91,7 @@ topology:
       - ip -6 route replace fd42:dead:beef:1000::a/127 via fd42:dead:beef:1000:0:0:0:3
         dev eth1 onlink
       - ip route replace default via 10.10.0.3 dev eth1 onlink
-    esp0xdeadbeef-site-a-s-router-access-mgmt:
+    s-router-access-mgmt:
       kind: linux
       image: clab-frr-plus-tooling:latest
       exec:
@@ -131,86 +126,7 @@ topology:
       - ip -6 route replace fd42:dead:beef:1000::a/127 via fd42:dead:beef:1000:0:0:0:5
         dev eth1 onlink
       - ip route replace default via 10.10.0.5 dev eth1 onlink
-    esp0xdeadbeef-site-a-s-router-policy:
-      kind: linux
-      image: clab-frr-plus-tooling:latest
-      exec:
-      - sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$i"; done'
-      - ip link set eth1 up
-      - ip link set eth2 up
-      - ip link set eth3 up
-      - ip link set eth4 up
-      - ip addr replace 10.10.0.1/31 peer 10.10.0.0/31 dev eth1
-      - ip -6 addr replace fd42:dead:beef:1000::1/127 peer fd42:dead:beef:1000::/127
-        dev eth1
-      - ip addr replace 10.10.0.3/31 peer 10.10.0.2/31 dev eth2
-      - ip -6 addr replace fd42:dead:beef:1000::3/127 peer fd42:dead:beef:1000::2/127
-        dev eth2
-      - ip addr replace 10.10.0.5/31 peer 10.10.0.4/31 dev eth3
-      - ip -6 addr replace fd42:dead:beef:1000::5/127 peer fd42:dead:beef:1000::4/127
-        dev eth3
-      - ip addr replace 10.10.0.10/31 peer 10.10.0.11/31 dev eth4
-      - ip -6 addr replace fd42:dead:beef:1000::a/127 peer fd42:dead:beef:1000::b/127
-        dev eth4
-      - ip route replace 10.20.15.0/24 via 10.10.0.0 dev eth1 onlink
-      - ip -6 route replace fd42:dead:beef:15::/64 via fd42:dead:beef:1000:0:0:0:0
-        dev eth1 onlink
-      - ip route replace 10.20.20.0/24 via 10.10.0.2 dev eth2 onlink
-      - ip -6 route replace fd42:dead:beef:20::/64 via fd42:dead:beef:1000:0:0:0:2
-        dev eth2 onlink
-      - ip route replace 10.20.10.0/24 via 10.10.0.4 dev eth3 onlink
-      - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:4
-        dev eth3 onlink
-      - ip route replace 10.10.0.6/31 via 10.10.0.11 dev eth4 onlink
-      - ip route replace 10.10.0.8/31 via 10.10.0.11 dev eth4 onlink
-      - ip -6 route replace ::/0 via fd42:dead:beef:1000:0:0:0:b dev eth4 onlink
-      - ip -6 route replace fd42:dead:beef:1000::6/127 via fd42:dead:beef:1000:0:0:0:b
-        dev eth4 onlink
-      - ip -6 route replace fd42:dead:beef:1000::8/127 via fd42:dead:beef:1000:0:0:0:b
-        dev eth4 onlink
-      - ip route replace default via 10.10.0.11 dev eth4 onlink
-      - sysctl -w net.ipv4.ip_forward=1
-      - sysctl -w net.ipv6.conf.all.forwarding=1
-    esp0xdeadbeef-site-a-s-router-upstream-selector:
-      kind: linux
-      image: clab-frr-plus-tooling:latest
-      exec:
-      - sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$i"; done'
-      - ip link set eth1 up
-      - ip link set eth2 up
-      - ip link set eth3 up
-      - ip addr replace 10.10.0.7/31 peer 10.10.0.6/31 dev eth1
-      - ip -6 addr replace fd42:dead:beef:1000::7/127 peer fd42:dead:beef:1000::6/127
-        dev eth1
-      - ip addr replace 10.10.0.9/31 peer 10.10.0.8/31 dev eth2
-      - ip -6 addr replace fd42:dead:beef:1000::9/127 peer fd42:dead:beef:1000::8/127
-        dev eth2
-      - ip addr replace 10.10.0.11/31 peer 10.10.0.10/31 dev eth3
-      - ip -6 addr replace fd42:dead:beef:1000::b/127 peer fd42:dead:beef:1000::a/127
-        dev eth3
-      - ip -6 route replace ::/0 via fd42:dead:beef:1000:0:0:0:6 dev eth1 onlink
-      - ip route replace 10.10.0.0/31 via 10.10.0.10 dev eth3 onlink
-      - ip route replace 10.10.0.2/31 via 10.10.0.10 dev eth3 onlink
-      - ip route replace 10.10.0.4/31 via 10.10.0.10 dev eth3 onlink
-      - ip route replace 10.20.10.0/24 via 10.10.0.10 dev eth3 onlink
-      - ip route replace 10.20.15.0/24 via 10.10.0.10 dev eth3 onlink
-      - ip route replace 10.20.20.0/24 via 10.10.0.10 dev eth3 onlink
-      - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:a
-        dev eth3 onlink
-      - ip -6 route replace fd42:dead:beef:15::/64 via fd42:dead:beef:1000:0:0:0:a
-        dev eth3 onlink
-      - ip -6 route replace fd42:dead:beef:20::/64 via fd42:dead:beef:1000:0:0:0:a
-        dev eth3 onlink
-      - ip -6 route replace fd42:dead:beef:1000::/127 via fd42:dead:beef:1000:0:0:0:a
-        dev eth3 onlink
-      - ip -6 route replace fd42:dead:beef:1000::2/127 via fd42:dead:beef:1000:0:0:0:a
-        dev eth3 onlink
-      - ip -6 route replace fd42:dead:beef:1000::4/127 via fd42:dead:beef:1000:0:0:0:a
-        dev eth3 onlink
-      - ip route replace default via 10.10.0.6 dev eth1 onlink
-      - sysctl -w net.ipv4.ip_forward=1
-      - sysctl -w net.ipv6.conf.all.forwarding=1
-    esp0xdeadbeef-site-a-s-router-core-nebula:
+    s-router-core-nebula:
       kind: linux
       image: clab-frr-plus-tooling:latest
       exec:
@@ -252,7 +168,7 @@ topology:
       - ip route replace default via 10.19.0.1 dev eth2 onlink
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
-    esp0xdeadbeef-site-a-s-router-core-wan:
+    s-router-core-wan:
       kind: linux
       image: clab-frr-plus-tooling:latest
       exec:
@@ -294,7 +210,86 @@ topology:
       - ip route replace default via 10.19.0.3 dev eth2 onlink
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
-    esp0xdeadbeef-site-a-wan-peer-nebula:
+    s-router-policy:
+      kind: linux
+      image: clab-frr-plus-tooling:latest
+      exec:
+      - sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$i"; done'
+      - ip link set eth1 up
+      - ip link set eth2 up
+      - ip link set eth3 up
+      - ip link set eth4 up
+      - ip addr replace 10.10.0.1/31 peer 10.10.0.0/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1000::1/127 peer fd42:dead:beef:1000::/127
+        dev eth1
+      - ip addr replace 10.10.0.3/31 peer 10.10.0.2/31 dev eth2
+      - ip -6 addr replace fd42:dead:beef:1000::3/127 peer fd42:dead:beef:1000::2/127
+        dev eth2
+      - ip addr replace 10.10.0.5/31 peer 10.10.0.4/31 dev eth3
+      - ip -6 addr replace fd42:dead:beef:1000::5/127 peer fd42:dead:beef:1000::4/127
+        dev eth3
+      - ip addr replace 10.10.0.10/31 peer 10.10.0.11/31 dev eth4
+      - ip -6 addr replace fd42:dead:beef:1000::a/127 peer fd42:dead:beef:1000::b/127
+        dev eth4
+      - ip route replace 10.20.15.0/24 via 10.10.0.0 dev eth1 onlink
+      - ip -6 route replace fd42:dead:beef:15::/64 via fd42:dead:beef:1000:0:0:0:0
+        dev eth1 onlink
+      - ip route replace 10.20.20.0/24 via 10.10.0.2 dev eth2 onlink
+      - ip -6 route replace fd42:dead:beef:20::/64 via fd42:dead:beef:1000:0:0:0:2
+        dev eth2 onlink
+      - ip route replace 10.20.10.0/24 via 10.10.0.4 dev eth3 onlink
+      - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:4
+        dev eth3 onlink
+      - ip route replace 10.10.0.6/31 via 10.10.0.11 dev eth4 onlink
+      - ip route replace 10.10.0.8/31 via 10.10.0.11 dev eth4 onlink
+      - ip -6 route replace ::/0 via fd42:dead:beef:1000:0:0:0:b dev eth4 onlink
+      - ip -6 route replace fd42:dead:beef:1000::6/127 via fd42:dead:beef:1000:0:0:0:b
+        dev eth4 onlink
+      - ip -6 route replace fd42:dead:beef:1000::8/127 via fd42:dead:beef:1000:0:0:0:b
+        dev eth4 onlink
+      - ip route replace default via 10.10.0.11 dev eth4 onlink
+      - sysctl -w net.ipv4.ip_forward=1
+      - sysctl -w net.ipv6.conf.all.forwarding=1
+    s-router-upstream-selector:
+      kind: linux
+      image: clab-frr-plus-tooling:latest
+      exec:
+      - sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$i"; done'
+      - ip link set eth1 up
+      - ip link set eth2 up
+      - ip link set eth3 up
+      - ip addr replace 10.10.0.7/31 peer 10.10.0.6/31 dev eth1
+      - ip -6 addr replace fd42:dead:beef:1000::7/127 peer fd42:dead:beef:1000::6/127
+        dev eth1
+      - ip addr replace 10.10.0.9/31 peer 10.10.0.8/31 dev eth2
+      - ip -6 addr replace fd42:dead:beef:1000::9/127 peer fd42:dead:beef:1000::8/127
+        dev eth2
+      - ip addr replace 10.10.0.11/31 peer 10.10.0.10/31 dev eth3
+      - ip -6 addr replace fd42:dead:beef:1000::b/127 peer fd42:dead:beef:1000::a/127
+        dev eth3
+      - ip -6 route replace ::/0 via fd42:dead:beef:1000:0:0:0:6 dev eth1 onlink
+      - ip route replace 10.10.0.0/31 via 10.10.0.10 dev eth3 onlink
+      - ip route replace 10.10.0.2/31 via 10.10.0.10 dev eth3 onlink
+      - ip route replace 10.10.0.4/31 via 10.10.0.10 dev eth3 onlink
+      - ip route replace 10.20.10.0/24 via 10.10.0.10 dev eth3 onlink
+      - ip route replace 10.20.15.0/24 via 10.10.0.10 dev eth3 onlink
+      - ip route replace 10.20.20.0/24 via 10.10.0.10 dev eth3 onlink
+      - ip -6 route replace fd42:dead:beef:10::/64 via fd42:dead:beef:1000:0:0:0:a
+        dev eth3 onlink
+      - ip -6 route replace fd42:dead:beef:15::/64 via fd42:dead:beef:1000:0:0:0:a
+        dev eth3 onlink
+      - ip -6 route replace fd42:dead:beef:20::/64 via fd42:dead:beef:1000:0:0:0:a
+        dev eth3 onlink
+      - ip -6 route replace fd42:dead:beef:1000::/127 via fd42:dead:beef:1000:0:0:0:a
+        dev eth3 onlink
+      - ip -6 route replace fd42:dead:beef:1000::2/127 via fd42:dead:beef:1000:0:0:0:a
+        dev eth3 onlink
+      - ip -6 route replace fd42:dead:beef:1000::4/127 via fd42:dead:beef:1000:0:0:0:a
+        dev eth3 onlink
+      - ip route replace default via 10.10.0.6 dev eth1 onlink
+      - sysctl -w net.ipv4.ip_forward=1
+      - sysctl -w net.ipv6.conf.all.forwarding=1
+    wan-peer-s-router-core-nebula-wan-s-router-core-nebula-nebula:
       kind: linux
       image: clab-frr-plus-tooling:latest
       exec:
@@ -339,7 +334,7 @@ topology:
       - nft add rule ip nat postrouting oifname "eth0" masquerade
       - ip route flush cache
       - ip -6 route flush cache
-    esp0xdeadbeef-site-a-wan-peer-wan:
+    wan-peer-s-router-core-wan-wan-s-router-core-wan-wan:
       kind: linux
       image: clab-frr-plus-tooling:latest
       exec:
@@ -386,68 +381,68 @@ topology:
       - ip -6 route flush cache
   links:
   - endpoints:
-    - esp0xdeadbeef-site-a-s-router-access-admin:eth1
-    - esp0xdeadbeef-site-a-s-router-policy:eth1
+    - s-router-access-admin:eth1
+    - s-router-policy:eth1
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-1ae349e25379
   - endpoints:
-    - esp0xdeadbeef-site-a-s-router-access-client:eth1
-    - esp0xdeadbeef-site-a-s-router-policy:eth2
+    - s-router-access-client:eth1
+    - s-router-policy:eth2
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-5980f0dc953e
   - endpoints:
-    - esp0xdeadbeef-site-a-s-router-access-mgmt:eth1
-    - esp0xdeadbeef-site-a-s-router-policy:eth3
+    - s-router-access-mgmt:eth1
+    - s-router-policy:eth3
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-6fff74cec0ec
   - endpoints:
-    - esp0xdeadbeef-site-a-s-router-core-nebula:eth1
-    - esp0xdeadbeef-site-a-s-router-upstream-selector:eth1
+    - s-router-core-nebula:eth1
+    - s-router-upstream-selector:eth1
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-9137ba2a7571
   - endpoints:
-    - esp0xdeadbeef-site-a-s-router-core-wan:eth1
-    - esp0xdeadbeef-site-a-s-router-upstream-selector:eth2
+    - s-router-core-wan:eth1
+    - s-router-upstream-selector:eth2
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-8240a4b630f9
   - endpoints:
-    - esp0xdeadbeef-site-a-s-router-policy:eth4
-    - esp0xdeadbeef-site-a-s-router-upstream-selector:eth3
+    - s-router-policy:eth4
+    - s-router-upstream-selector:eth3
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-4743c4e638ef
   - endpoints:
-    - esp0xdeadbeef-site-a-s-router-access-admin:eth2
-    - host:veth-br-17-5f0d
-    labels:
-      clab.link.type: bridge
-      clab.link.bridge: br-17893598c586
-  - endpoints:
-    - esp0xdeadbeef-site-a-s-router-access-client:eth2
-    - host:veth-br-3f-e537
-    labels:
-      clab.link.type: bridge
-      clab.link.bridge: br-3fbc5b75dfbd
-  - endpoints:
-    - esp0xdeadbeef-site-a-s-router-access-mgmt:eth2
-    - host:veth-br-71-b969
-    labels:
-      clab.link.type: bridge
-      clab.link.bridge: br-71ddb5e135c4
-  - endpoints:
-    - esp0xdeadbeef-site-a-s-router-core-nebula:eth2
-    - esp0xdeadbeef-site-a-wan-peer-nebula:eth1
+    - s-router-core-nebula:eth2
+    - wan-peer-s-router-core-nebula-wan-s-router-core-nebula-nebula:eth1
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-1dec167e9f83
   - endpoints:
-    - esp0xdeadbeef-site-a-s-router-core-wan:eth2
-    - esp0xdeadbeef-site-a-wan-peer-wan:eth1
+    - s-router-core-wan:eth2
+    - wan-peer-s-router-core-wan-wan-s-router-core-wan-wan:eth1
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-e035268ceff9
+  - endpoints:
+    - s-router-access-admin:eth2
+    - host:veth-br-178-5f0d
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: br-17893598c586
+  - endpoints:
+    - s-router-access-client:eth2
+    - host:veth-br-3fb-e537
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: br-3fbc5b75dfbd
+  - endpoints:
+    - s-router-access-mgmt:eth2
+    - host:veth-br-71d-b969
+    labels:
+      clab.link.type: bridge
+      clab.link.bridge: br-71ddb5e135c4

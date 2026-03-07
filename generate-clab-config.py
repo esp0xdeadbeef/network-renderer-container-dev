@@ -3,10 +3,17 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+import importlib.util
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from clabgen.export import write_outputs
+def _load_parser():
+    parser_file = Path.cwd() / "clabgen" / "parse-solver-json.py"
+
+    spec = importlib.util.spec_from_file_location("clabgen.parse_solver_json", parser_file)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
 
 
 def main() -> None:
@@ -18,7 +25,8 @@ def main() -> None:
     topology_out = sys.argv[2]
     bridges_out = sys.argv[3]
 
-    write_outputs(solver_json, topology_out, bridges_out)
+    parser = _load_parser()
+    parser.write_outputs(solver_json, topology_out, bridges_out)
 
 
 if __name__ == "__main__":

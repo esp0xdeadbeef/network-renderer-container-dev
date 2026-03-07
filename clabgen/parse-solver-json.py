@@ -1,3 +1,4 @@
+# ./clabgen/parse-solver-json.py
 from __future__ import annotations
 
 import json
@@ -12,10 +13,14 @@ from clabgen.s88.enterprise.enterprise import Enterprise
 
 def _git_rev(repo: Path) -> str:
     try:
-        return subprocess.check_output(
-            ["git", "-C", str(repo), "rev-parse", "HEAD"],
-            stderr=subprocess.DEVNULL,
-        ).decode().strip()
+        return (
+            subprocess.check_output(
+                ["git", "-C", str(repo), "rev-parse", "HEAD"],
+                stderr=subprocess.DEVNULL,
+            )
+            .decode()
+            .strip()
+        )
     except Exception:
         return "unknown"
 
@@ -43,11 +48,17 @@ def _render_meta_comment(meta: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_topology(solver_json: str | Path) -> Dict[str, Any]:
+    enterprise = Enterprise.from_solver_json(solver_json)
+    return enterprise.render()
+
+
 def write_outputs(
     solver_json: str | Path,
     topology_out: str | Path,
     bridges_out: str | Path,
 ) -> None:
+
     solver_json = Path(solver_json)
     topology_out = Path(topology_out)
     bridges_out = Path(bridges_out)
@@ -55,8 +66,7 @@ def write_outputs(
     with solver_json.open() as f:
         solver = json.load(f)
 
-    enterprise = Enterprise.from_solver_json(solver_json)
-    merged = enterprise.render()
+    merged = render_topology(solver_json)
 
     topo_yaml = yaml.safe_dump(
         {
