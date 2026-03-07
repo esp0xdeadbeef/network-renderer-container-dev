@@ -4,6 +4,7 @@ from typing import Dict, Any, List
 from pathlib import Path
 import copy
 import hashlib
+import ipaddress
 
 from clabgen.models import SiteModel
 from clabgen.s88.enterprise.site_loader import load_sites
@@ -14,11 +15,6 @@ from clabgen.s88.engine import render_node_s88
 def _short_bridge(name: str) -> str:
     h = hashlib.blake2s(name.encode(), digest_size=6).hexdigest()
     return f"br-{h}"
-
-
-def _host_ifname(bridge: str) -> str:
-    h = hashlib.blake2s(bridge.encode(), digest_size=2).hexdigest()
-    return f"veth-{bridge[:6]}-{h}"
 
 
 def _build_eth_maps(site: SiteModel) -> Dict[str, Dict[str, int]]:
@@ -51,8 +47,57 @@ def _build_eth_maps(site: SiteModel) -> Dict[str, Dict[str, int]]:
     return eth_maps
 
 
+def _first_usable_ip(network: ipaddress._BaseNetwork) -> ipaddress._BaseAddress:
+    if isinstance(network, ipaddress.IPv4Network):
+        if network.prefixlen >= 31:
+            return network.network_address
+        return network.network_address + 1
+
+    if network.prefixlen >= 127:
+        return network.network_address
+    return network.network_address + 1
+
+
+def _second_usable_ip(network: ipaddress._BaseNetwork) -> ipaddress._BaseAddress:
+    if isinstance(network, ipaddress.IPv4Network):
+        if network.prefixlen >= 31:
+            return network.broadcast_address
+        return network.network_address + 2
+
+    if network.prefixlen >= 127:
+        return network.broadcast_address
+    return network.network_address + 2
+
+
+def _normalize_router_iface(cidr: str) -> ipaddress.IPv4Interface | ipaddress.IPv6Interface:
+    iface = ipaddress.ip_interface(cidr)
+    network = iface.network
+
+    if iface.ip == network.network_address:
+        iface = ipaddress.ip_interface(f"{_first_usable_ip(network)}/{network.prefixlen}")
+
+    return iface
+
+
+def _derive_client_iface(cidr: str) -> tuple[str, str]:
+    router_iface = _normalize_router_iface(cidr)
+    network = router_iface.network
+    router_ip = router_iface.ip
+
+    first = _first_usable_ip(network)
+    second = _second_usable_ip(network)
+
+    client_ip = second if router_ip == first else first
+
+    if client_ip == router_ip:
+        raise RuntimeError(f"no distinct usable client address for {cidr}")
+
+    return str(router_ip), f"{client_ip}/{network.prefixlen}"
+
+
 def generate_topology(site: SiteModel) -> Dict[str, Any]:
     site = copy.deepcopy(site)
+
     inject_emulated_wan_peers(site)
 
     eth_maps = _build_eth_maps(site)
@@ -141,8 +186,33 @@ def generate_topology(site: SiteModel) -> Dict[str, Any]:
         bridges.append(bridge)
 
         endpoints = list(tenant_groups[tenant])
-        if len(endpoints) == 1:
-            endpoints.append(f"host:{_host_ifname(bridge)}")
+
+        router_ep = endpoints[0]
+        router_name = router_ep.split(":")[0]
+        router_iface = site.nodes[router_name].interfaces[tenant]
+
+        router_v4, client_v4 = _derive_client_iface(router_iface.addr4)
+
+        exec_cmds = [
+            f"ip addr add {client_v4} dev eth1",
+            "ip link set eth1 up",
+            f"ip route replace default via {router_v4} dev eth1",
+        ]
+
+        if router_iface.addr6:
+            router_v6, client_v6 = _derive_client_iface(router_iface.addr6)
+            exec_cmds.insert(1, f"ip -6 addr add {client_v6} dev eth1")
+            exec_cmds.append(f"ip -6 route replace default via {router_v6} dev eth1")
+
+        client_name = f"client-{router_name}-{tenant}"
+
+        nodes[client_name] = {
+            "kind": "linux",
+            "image": "clab-frr-plus-tooling:latest",
+            "exec": exec_cmds,
+        }
+
+        endpoints.append(f"{client_name}:eth1")
 
         links.append(
             {

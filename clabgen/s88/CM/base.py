@@ -1,3 +1,4 @@
+# ./clabgen/s88/CM/base.py
 from __future__ import annotations
 
 from typing import Callable, Dict, List
@@ -10,6 +11,7 @@ from .firewall import render as render_firewall
 
 CM_BY_ROLE: Dict[str, List[Callable[[str, str], List[str]]]] = {
     "access": [render_empty],
+    "client": [render_empty],
     "core": [render_forwarding],
     "upstream-selector": [render_forwarding],
     "policy": [render_forwarding, render_firewall],

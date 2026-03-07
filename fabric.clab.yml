@@ -1,16 +1,10 @@
 # --- provenance ---
 # {
 #   "renderer": {
-#     "gitDirty": false,
-#     "gitRev": "8e4c1818b7bbe0acf6ae42edc1f2ac58ab035dca",
+#     "gitDirty": true,
+#     "gitRev": "3dcf55a081015e9dc45625e859f72a5c972fabff",
 #     "name": "network-renderer-containerlab-linux-backend",
 #     "schemaVersion": 2
-#   },
-#   "solver": {
-#     "solver": {
-#       "gitDirty": false,
-#       "gitRev": "8e4c1818b7bbe0acf6ae42edc1f2ac58ab035dca"
-#     }
 #   }
 # }
 # --- end provenance ---
@@ -379,6 +373,33 @@ topology:
       - nft add rule ip nat postrouting oifname "eth0" masquerade
       - ip route flush cache
       - ip -6 route flush cache
+    client-s-router-access-admin-tenant-admin:
+      kind: linux
+      image: clab-frr-plus-tooling:latest
+      exec:
+      - ip addr add 10.20.15.2/24 dev eth1
+      - ip -6 addr add fd42:dead:beef:15::2/64 dev eth1
+      - ip link set eth1 up
+      - ip route replace default via 10.20.15.1 dev eth1
+      - ip -6 route replace default via fd42:dead:beef:15::1 dev eth1
+    client-s-router-access-client-tenant-client:
+      kind: linux
+      image: clab-frr-plus-tooling:latest
+      exec:
+      - ip addr add 10.20.20.2/24 dev eth1
+      - ip -6 addr add fd42:dead:beef:20::2/64 dev eth1
+      - ip link set eth1 up
+      - ip route replace default via 10.20.20.1 dev eth1
+      - ip -6 route replace default via fd42:dead:beef:20::1 dev eth1
+    client-s-router-access-mgmt-tenant-mgmt:
+      kind: linux
+      image: clab-frr-plus-tooling:latest
+      exec:
+      - ip addr add 10.20.10.2/24 dev eth1
+      - ip -6 addr add fd42:dead:beef:10::2/64 dev eth1
+      - ip link set eth1 up
+      - ip route replace default via 10.20.10.1 dev eth1
+      - ip -6 route replace default via fd42:dead:beef:10::1 dev eth1
   links:
   - endpoints:
     - s-router-access-admin:eth1
@@ -430,19 +451,19 @@ topology:
       clab.link.bridge: br-e035268ceff9
   - endpoints:
     - s-router-access-admin:eth2
-    - host:veth-br-178-5f0d
+    - client-s-router-access-admin-tenant-admin:eth1
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-17893598c586
   - endpoints:
     - s-router-access-client:eth2
-    - host:veth-br-3fb-e537
+    - client-s-router-access-client-tenant-client:eth1
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-3fbc5b75dfbd
   - endpoints:
     - s-router-access-mgmt:eth2
-    - host:veth-br-71d-b969
+    - client-s-router-access-mgmt-tenant-mgmt:eth1
     labels:
       clab.link.type: bridge
       clab.link.bridge: br-71ddb5e135c4

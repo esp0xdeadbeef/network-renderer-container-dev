@@ -87,7 +87,6 @@ def write_outputs(
 
     provenance = {
         "renderer": renderer_meta,
-        "solver": dict(solver.get("meta", {}) or {}),
     }
 
     comment = _render_meta_comment(provenance)

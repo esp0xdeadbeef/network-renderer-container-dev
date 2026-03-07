@@ -135,6 +135,7 @@ def inject_emulated_wan_peers(site: SiteModel) -> None:
                         }
                     )
 
+        print(f"WARNING {injected_node_name} injected to the config.")
         site.nodes[injected_node_name].interfaces[iface_name] = InterfaceModel(
             name=iface_name,
             addr4=peer_ep.get("addr4"),
