@@ -1,4 +1,3 @@
-# ./clabgen/export.py
 from __future__ import annotations
 
 import json
@@ -44,38 +43,6 @@ def _render_meta_comment(meta: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _to_nix(value: Any, indent: int = 0) -> str:
-    sp = " " * indent
-
-    if value is None:
-        return "null"
-
-    if isinstance(value, bool):
-        return "true" if value else "false"
-
-    if isinstance(value, (int, float)):
-        return str(value)
-
-    if isinstance(value, str):
-        return json.dumps(value)
-
-    if isinstance(value, list):
-        if not value:
-            return "[ ]"
-        inner = "\n".join(f'{" " * (indent + 2)}{_to_nix(item, indent + 2)}' for item in value)
-        return "[\n" + inner + f"\n{sp}]"
-
-    if isinstance(value, dict):
-        if not value:
-            return "{ }"
-        parts = []
-        for key in sorted(value.keys()):
-            parts.append(f'{" " * (indent + 2)}{json.dumps(str(key))} = {_to_nix(value[key], indent + 2)};')
-        return "{\n" + "\n".join(parts) + f"\n{sp}}}"
-
-    raise TypeError(f"unsupported Nix conversion type: {type(value)!r}")
-
-
 def write_outputs(
     solver_json: str | Path,
     topology_out: str | Path,
@@ -117,15 +84,15 @@ def write_outputs(
 
     topology_out.write_text(f"{comment}\n# fabric.clab.yml\n{topo_yaml}")
 
-    bridge_modules = dict(merged.get("bridge_control_modules", {}) or {})
     bridges = list(merged.get("bridges", []))
 
     bridges_body = (
         "{ lib, ... }:\n"
         "{\n"
-        f"  provenance = {_to_nix(provenance, 2)};\n"
-        f"  bridges = {_to_nix(bridges, 2)};\n"
-        f"  bridgeControlModules = {_to_nix(bridge_modules, 2)};\n"
+        "  bridges = [\n"
+        + "\n".join(f'    "{b}"' for b in bridges)
+        + "\n"
+        "  ];\n"
         "}\n"
     )
 
