@@ -1,4 +1,3 @@
-# ./clabgen/s88/EM/default.py
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -333,6 +332,7 @@ def render(
     cmds.extend(_render_addressing(node_data, eth_map))
     cmds.extend(_render_static_routes(node_data, eth_map))
     cmds.extend(_render_default_routes(node_data, eth_map))
-    cmds.extend(render_cm(role, node_name))
+
+    cmds.extend(render_cm(role, node_name, node_data))
 
     return cmds

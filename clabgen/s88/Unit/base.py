@@ -1,4 +1,4 @@
-# ./clabgen/Unit/base.py
+# ./clabgen/s88/Unit/base.py
 from __future__ import annotations
 
 from typing import Dict, List, Tuple, Any, Callable
@@ -14,7 +14,7 @@ from clabgen.s88.Unit.upstream_selector import render as render_upstream_selecto
 from clabgen.s88.Unit.wan_peer import render as render_wan_peer
 
 
-NodeRenderer = Callable[[str, NodeModel, Dict[str, int]], Dict[str, Any]]
+NodeRenderer = Callable[[str, NodeModel, Dict[str, int], Dict[str, Any]], Dict[str, Any]]
 
 
 def _short_bridge(name: str) -> str:
@@ -39,7 +39,6 @@ def _tenant_group_key(iface_name: str, node_name: str, iface: Any) -> str:
             continue
 
     if prefixes:
-        # Prefer IPv4 when present, otherwise IPv6.
         family_sorted = sorted(prefixes, key=lambda p: (":" in p, p))
         return family_sorted[0]
 
@@ -89,12 +88,31 @@ def _renderers() -> Dict[str, NodeRenderer]:
     }
 
 
-def _render_node(node_name: str, node: NodeModel, eth_map: Dict[str, int]) -> Dict[str, Any]:
+def _node_extra(site: SiteModel) -> Dict[str, Any]:
+    return {
+        "enterprise": {
+            site.enterprise: {
+                "site": {
+                    site.site: {
+                        "communicationContract": dict(site.raw_policy or {}),
+                    }
+                }
+            }
+        }
+    }
+
+
+def _render_node(
+    site: SiteModel,
+    node_name: str,
+    node: NodeModel,
+    eth_map: Dict[str, int],
+) -> Dict[str, Any]:
     role = str(node.role or "").strip()
     renderer = _renderers().get(role)
     if renderer is None:
         raise ValueError(f"No Unit renderer for role={role!r} node={node_name!r}")
-    return renderer(node_name, node, eth_map)
+    return renderer(node_name, node, eth_map, _node_extra(site))
 
 
 def render_units(site: SiteModel) -> Tuple[Dict[str, Any], List[Dict[str, Any]], List[str]]:
@@ -106,7 +124,7 @@ def render_units(site: SiteModel) -> Tuple[Dict[str, Any], List[Dict[str, Any]],
 
     for node_name in sorted(site.nodes.keys()):
         node = site.nodes[node_name]
-        nodes[node_name] = _render_node(node_name, node, eth_maps.get(node_name, {}))
+        nodes[node_name] = _render_node(site, node_name, node, eth_maps.get(node_name, {}))
 
     for link_name in sorted(site.links.keys()):
         link = site.links[link_name]

@@ -1,49 +1,55 @@
-# TODO
+# TODO — Policy Firewall (Renderer)
 
-## Firewall / Policy Enforcement
+## Goal
+Implement deterministic policy enforcement on the policy router using nftables.
+Policy decisions must be based on topology (interfaces / tenants), not subnets.
 
-- Implement policy enforcement using **nftables**
-- Generate nft rules from **solver policy output**
-- Run firewall only on the **policy router (s-router-policy)**
+## Policy Location
+- Firewall runs only on `policyNodeName`
+- Other routers must not install policy rules
 
 ## Renderer Tasks
+- Read `policy.rules` from solver output
+- Map tenants → policy-router ingress interfaces
+- Map `external` → upstream interface
+- Translate policy rules into interface-to-interface nftables rules
+- Preserve rule ordering and priorities
 
-- Parse `policy.rules` from solver output
-- Resolve tenant names → tenant subnets
-- Resolve service capabilities → ports
-- Resolve `external` references → uplinks
-- Generate nftables ruleset
-- Preserve rule **priority / ordering**
+## Interface Zones
+Derive zones from policy-router links:
+
+- access-admin  → admin zone
+- access-client → client zone
+- access-mgmt   → mgmt zone
+- upstream-selector → wan zone
+
+Rules operate on:
+
+    iifname (source zone)
+    oifname (destination zone)
+
+Do not match IP subnets.
+
+## nftables Model
+- table: `inet policy`
+- hook: `forward`
+- default policy: `drop`
+- allow established/related
+- apply rules generated from policy.rules
 
 ## Runtime Integration
+- Write nft rules to `output/nftables/<site>.nft`
+- Mount rules into the policy container
+- Load rules during container startup
 
-- Write nftables files to `output/nftables/`
-- Mount directory into containers
-- Load rules on container startup
-
-## Interface Tagging / Isolation
-
-- Use **interface tagging** wherever possible
-- Use **fwmarks for internal traffic classification**
-- Mask physical interface names so rules do not depend on `ethX`
-- Exception: **upstream-selector cannot use interface tagging**
-
-## Forwarding Restrictions
-
-- Disable forwarding on **eth0 (containerlab management interface)** by default
-- Only allow forwarding on eth0 for:
-  - `clab-fabric-esp0xdeadbeef-site-a-wan-peer-wan` (fake ISP)
-
-## Rule Model
-
-- Default policy: **drop**
-- Allow rules generated from solver
-- Deny rules generated from solver
-- Support IPv4 and IPv6
+## Management Interface Safety
+- Disable forwarding on containerlab `eth0`
+- Exception: fake ISP peer container
 
 ## Validation
+Verify policy behavior:
 
-- client → mgmt DNS **blocked**
-- admin → mgmt DNS **allowed**
-- client → mgmt **blocked**
-- client → WAN **allowed**
+- client → mgmt DNS blocked
+- admin → mgmt DNS allowed
+- client → mgmt blocked
+- client → WAN allowed

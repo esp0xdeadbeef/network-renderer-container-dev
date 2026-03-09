@@ -1,3 +1,4 @@
+# ./clabgen/s88/Unit/common.py
 from __future__ import annotations
 
 from typing import Dict, Any
@@ -8,8 +9,13 @@ from clabgen.models import NodeModel
 from clabgen.s88.engine import render_node_s88
 
 
-def build_node_data(node_name: str, node: NodeModel, eth_map: Dict[str, int]) -> Dict[str, Any]:
-    return {
+def build_node_data(
+    node_name: str,
+    node: NodeModel,
+    eth_map: Dict[str, int],
+    extra: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
+    node_data: Dict[str, Any] = {
         "name": node_name,
         "role": node.role,
         "interfaces": {
@@ -27,13 +33,19 @@ def build_node_data(node_name: str, node: NodeModel, eth_map: Dict[str, int]) ->
         "route_intents": list(node.route_intents),
     }
 
+    if extra:
+        node_data.update(copy.deepcopy(extra))
+
+    return node_data
+
 
 def render_linux_node(
     node_name: str,
     node: NodeModel,
     eth_map: Dict[str, int],
+    extra: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
-    node_data = build_node_data(node_name, node, eth_map)
+    node_data = build_node_data(node_name, node, eth_map, extra=extra)
     exec_cmds = render_node_s88(node_name, node_data, eth_map)
 
     return {

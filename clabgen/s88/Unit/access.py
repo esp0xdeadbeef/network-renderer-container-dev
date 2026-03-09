@@ -6,9 +6,15 @@ from clabgen.models import NodeModel
 from clabgen.s88.Unit.common import render_linux_node
 
 
-def render(node_name: str, node: NodeModel, eth_map: Dict[str, int]) -> Dict[str, Any]:
+def render(
+    node_name: str,
+    node: NodeModel,
+    eth_map: Dict[str, int],
+    extra: Dict[str, Any],
+) -> Dict[str, Any]:
     return render_linux_node(
         node_name=node_name,
         node=node,
         eth_map=eth_map,
+        extra=extra,
     )

@@ -1,4 +1,3 @@
-# ./clabgen/s88/Unit/core.py
 from __future__ import annotations
 
 from typing import Dict, Any, List
@@ -19,8 +18,13 @@ def _wan_interfaces(node: NodeModel, eth_map: Dict[str, int]) -> List[str]:
     return wan_ifaces
 
 
-def render(node_name: str, node: NodeModel, eth_map: Dict[str, int]) -> Dict[str, Any]:
-    node_data = build_node_data(node_name, node, eth_map)
+def render(
+    node_name: str,
+    node: NodeModel,
+    eth_map: Dict[str, int],
+    extra: Dict[str, Any],
+) -> Dict[str, Any]:
+    node_data = build_node_data(node_name, node, eth_map, extra=extra)
 
     exec_cmds: List[str] = render_node_s88(
         node_name=node_name,

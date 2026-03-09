@@ -2,7 +2,7 @@
 # {
 #   "renderer": {
 #     "gitDirty": true,
-#     "gitRev": "fff505ee99812b072cd136715b7a1494e21ba916",
+#     "gitRev": "9c2832b6b0788b696c1a04d4793a1321125f0c04",
 #     "name": "network-renderer-containerlab-linux-backend",
 #     "schemaVersion": 2
 #   }
@@ -243,6 +243,8 @@ topology:
       - ip route replace default via 10.19.0.1 dev eth2 onlink
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
+      - sysctl -w net.ipv4.conf.eth0.forwarding=0
+      - sysctl -w net.ipv6.conf.eth0.forwarding=0
       - nft flush ruleset
       - nft add table inet filter
       - nft 'add chain inet filter input { type filter hook input priority 0 ; policy
@@ -330,6 +332,24 @@ topology:
       - ip route replace default via 10.10.0.9 dev eth4 onlink
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
+      - sysctl -w net.ipv4.conf.eth0.forwarding=0
+      - sysctl -w net.ipv6.conf.eth0.forwarding=0
+      - echo '[FW] policy firewall starting'
+      - nft add table inet fw
+      - nft 'add chain inet fw forward { type filter hook forward priority 0 ; policy
+        drop ; }'
+      - nft add rule inet fw forward ct state established,related accept
+      - nft add rule inet fw forward ct state invalid drop
+      - nft add rule inet fw forward iifname "eth0" drop
+      - nft add rule inet fw forward oifname "eth0" drop
+      - nft add rule inet fw forward iifname "eth3" oifname "eth4" accept
+      - nft add rule inet fw forward iifname "eth1" oifname "eth4" accept
+      - nft add rule inet fw forward iifname "eth2" oifname "eth4" accept
+      - nft add rule inet fw forward iifname "eth4" oifname "eth3" accept
+      - nft add rule inet fw forward iifname "eth4" oifname "eth1" accept
+      - nft add rule inet fw forward iifname "eth4" oifname "eth2" accept
+      - echo '[FW] resulting ruleset:'
+      - nft list table inet fw
     s-router-upstream-selector:
       kind: linux
       image: clab-frr-plus-tooling:latest
@@ -383,6 +403,8 @@ topology:
       - ip route replace default via 10.10.0.6 dev eth1 onlink
       - sysctl -w net.ipv4.ip_forward=1
       - sysctl -w net.ipv6.conf.all.forwarding=1
+      - sysctl -w net.ipv4.conf.eth0.forwarding=0
+      - sysctl -w net.ipv6.conf.eth0.forwarding=0
     wan-peer-s-router-core-wan-wan-s-router-core-wan-wan:
       kind: linux
       image: clab-frr-plus-tooling:latest

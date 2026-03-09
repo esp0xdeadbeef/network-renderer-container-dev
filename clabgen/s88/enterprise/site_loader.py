@@ -1,3 +1,4 @@
+# ./clabgen/s88/enterprise/site_loader.py
 from __future__ import annotations
 
 from typing import Dict, List, Any
@@ -143,9 +144,10 @@ def load_sites(path: str | Path) -> Dict[str, SiteModel]:
             links=links,
             single_access=assumptions.get("singleAccess", ""),
             domains={},
-            raw_policy={},
+            raw_policy=dict(site.get("communicationContract", {}) or {}),
             raw_nat={},
             raw_links=dict(site.get("links", {}) or {}),
+            raw_ownership=dict(site.get("ownership", {}) or {}),
             solver_meta=solver_meta,
         )
 
