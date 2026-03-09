@@ -1,3 +1,4 @@
+# ./clabgen/s88/CM/node_context.py
 from __future__ import annotations
 from typing import Dict, Any
 
@@ -18,9 +19,8 @@ def build_node_context(
     ctx["node"] = node_data
     ctx["_s88_links"] = node_links
 
-    #
-    # CRITICAL: pass enterprise contract model
-    #
     ctx["enterprise"] = model.get("enterprise", {})
+    ctx["renderer_inventory"] = model.get("renderer_inventory", {})
+    ctx["provider_zone_map"] = model.get("provider_zone_map", {})
 
     return ctx

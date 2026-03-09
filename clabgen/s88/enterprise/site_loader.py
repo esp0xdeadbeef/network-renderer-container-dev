@@ -1,4 +1,3 @@
-# ./clabgen/s88/enterprise/site_loader.py
 from __future__ import annotations
 
 from typing import Dict, List, Any
@@ -117,12 +116,271 @@ def _build_links(site: Dict[str, Any]) -> Dict[str, LinkModel]:
     return links
 
 
-def load_sites(path: str | Path) -> Dict[str, SiteModel]:
+def _zone_from_name(name: str) -> str | None:
+    n = str(name or "").strip().lower()
+
+    if n in {"admin", "tenant-admin"} or "admin" in n:
+        return "admin"
+    if n in {"client", "tenant-client"} or "client" in n:
+        return "client"
+    if n in {"mgmt", "management", "tenant-mgmt"} or "mgmt" in n:
+        return "mgmt"
+    if n in {"wan", "external", "internet", "upstream"} or "wan" in n:
+        return "wan"
+
+    return None
+
+
+def _ownership_endpoint_tenants(ownership: Dict[str, Any]) -> Dict[str, str]:
+    result: Dict[str, str] = {}
+
+    endpoints = ownership.get("endpoints", [])
+    if endpoints is None:
+        return result
+    if not isinstance(endpoints, list):
+        raise ValueError("ownership.endpoints must be an array")
+
+    for endpoint in endpoints:
+        if not isinstance(endpoint, dict):
+            continue
+
+        name = endpoint.get("name")
+        tenant = endpoint.get("tenant")
+
+        if not isinstance(name, str) or not name:
+            raise ValueError("ownership.endpoints[].name must be a non-empty string")
+        if not isinstance(tenant, str) or not tenant:
+            raise ValueError(
+                f"ownership.endpoints[{name!r}].tenant must be a non-empty string"
+            )
+
+        result[name] = tenant
+
+    return result
+
+
+def _normalize_renderer_inventory(renderer_inventory: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(renderer_inventory, dict):
+        raise ValueError("renderer inventory must be an object")
+
+    hosts = renderer_inventory.get("hosts", {})
+    if not isinstance(hosts, dict):
+        raise ValueError("renderer inventory 'hosts' must be an object")
+
+    normalized_hosts: Dict[str, Dict[str, Any]] = {}
+
+    for host_name, host in hosts.items():
+        if not isinstance(host_name, str) or not host_name:
+            raise ValueError("renderer inventory host names must be non-empty strings")
+        if not isinstance(host, dict):
+            raise ValueError(f"renderer inventory host {host_name!r} must be an object")
+
+        attach_node = host.get("attach_node")
+        attach_network = host.get("attach_network")
+
+        if not isinstance(attach_node, str) or not attach_node:
+            raise ValueError(
+                f"renderer inventory host {host_name!r}.attach_node must be a non-empty string"
+            )
+        if not isinstance(attach_network, str) or not attach_network:
+            raise ValueError(
+                f"renderer inventory host {host_name!r}.attach_network must be a non-empty string"
+            )
+
+        normalized_hosts[host_name] = dict(host)
+
+    return {"hosts": normalized_hosts}
+
+
+def _service_provider_names(raw_policy: Dict[str, Any]) -> List[str]:
+    result: List[str] = []
+
+    services = raw_policy.get("services", [])
+    if not isinstance(services, list):
+        return result
+
+    for service in services:
+        if not isinstance(service, dict):
+            continue
+
+        providers = service.get("providers", [])
+        if not isinstance(providers, list):
+            continue
+
+        for provider in providers:
+            if isinstance(provider, str) and provider:
+                result.append(provider)
+
+    return sorted(set(result))
+
+
+def _validate_renderer_inventory_for_site(
+    *,
+    enterprise: str,
+    site_name: str,
+    site: Dict[str, Any],
+    renderer_inventory: Dict[str, Any],
+) -> Dict[str, Any]:
+    normalized_inventory = _normalize_renderer_inventory(renderer_inventory)
+    hosts = normalized_inventory["hosts"]
+    site_nodes = site.get("nodes", {})
+    if not isinstance(site_nodes, dict):
+        raise ValueError(
+            f"enterprise.{enterprise}.site.{site_name}.nodes must be an object"
+        )
+
+    raw_policy = dict(site.get("communicationContract", {}) or {})
+    ownership = dict(site.get("ownership", {}) or {})
+    endpoint_tenants = _ownership_endpoint_tenants(ownership)
+
+    required_hosts = set(endpoint_tenants.keys())
+    required_hosts.update(_service_provider_names(raw_policy))
+
+    for host_name in sorted(required_hosts):
+        host = hosts.get(host_name)
+        if not isinstance(host, dict):
+            raise ValueError(
+                f"renderer inventory missing host placement for endpoint/provider "
+                f"{host_name!r} in {enterprise}/{site_name}"
+            )
+
+        attach_node = host.get("attach_node")
+        attach_network = host.get("attach_network")
+
+        if attach_node not in site_nodes:
+            raise ValueError(
+                f"renderer inventory host {host_name!r} references missing "
+                f"attach_node {attach_node!r} in {enterprise}/{site_name}"
+            )
+
+        attach_zone = _zone_from_name(str(attach_network))
+        if attach_zone is None:
+            raise ValueError(
+                f"renderer inventory host {host_name!r} has unsupported "
+                f"attach_network {attach_network!r} in {enterprise}/{site_name}"
+            )
+
+        ownership_tenant = endpoint_tenants.get(host_name)
+        if ownership_tenant is not None:
+            tenant_zone = _zone_from_name(str(ownership_tenant))
+
+            if tenant_zone is None:
+                raise ValueError(
+                    f"ownership endpoint {host_name!r} has unsupported tenant "
+                    f"{ownership_tenant!r} in {enterprise}/{site_name}"
+                )
+
+            if attach_zone != tenant_zone:
+                raise ValueError(
+                    f"renderer inventory tenant mismatch for endpoint {host_name!r} "
+                    f"in {enterprise}/{site_name}: attach_network={attach_network!r} "
+                    f"ownership.tenant={ownership_tenant!r}"
+                )
+
+    return normalized_inventory
+
+
+def _provider_zone_map(
+    *,
+    enterprise: str,
+    site_name: str,
+    raw_policy: Dict[str, Any],
+    raw_ownership: Dict[str, Any],
+    renderer_inventory: Dict[str, Any],
+) -> Dict[str, str]:
+    services = raw_policy.get("services", [])
+    if not isinstance(services, list):
+        raise ValueError(
+            f"communicationContract.services must be an array in {enterprise}/{site_name}"
+        )
+
+    endpoint_tenants = _ownership_endpoint_tenants(raw_ownership)
+    hosts = dict(renderer_inventory.get("hosts", {}) or {})
+    result: Dict[str, str] = {}
+
+    for service in services:
+        if not isinstance(service, dict):
+            continue
+
+        service_name = service.get("name")
+        providers = service.get("providers", [])
+
+        if not isinstance(service_name, str) or not service_name:
+            continue
+
+        if not isinstance(providers, list):
+            raise ValueError(
+                f"service {service_name!r}.providers must be an array in {enterprise}/{site_name}"
+            )
+
+        resolved_zone: str | None = None
+
+        for provider in providers:
+            if not isinstance(provider, str) or not provider:
+                continue
+
+            host = hosts.get(provider)
+            if not isinstance(host, dict):
+                raise ValueError(
+                    f"service provider {provider!r} for service {service_name!r} "
+                    f"has no renderer placement in {enterprise}/{site_name}"
+                )
+
+            attach_node = host.get("attach_node")
+            if not isinstance(attach_node, str) or not attach_node:
+                raise ValueError(
+                    f"service provider {provider!r} for service {service_name!r} "
+                    f"has invalid attach_node in renderer inventory"
+                )
+
+            attach_network = host.get("attach_network")
+            attach_zone = _zone_from_name(str(attach_network))
+            if attach_zone is None:
+                raise ValueError(
+                    f"service provider {provider!r} for service {service_name!r} "
+                    f"has unsupported attach_network {attach_network!r}"
+                )
+
+            tenant = endpoint_tenants.get(provider)
+            if isinstance(tenant, str) and tenant:
+                tenant_zone = _zone_from_name(tenant)
+                if tenant_zone is None:
+                    raise ValueError(
+                        f"service provider {provider!r} for service {service_name!r} "
+                        f"has unsupported ownership tenant {tenant!r}"
+                    )
+                if attach_zone != tenant_zone:
+                    raise ValueError(
+                        f"service provider {provider!r} for service {service_name!r} "
+                        f"has tenant mismatch in {enterprise}/{site_name}: "
+                        f"attach_network={attach_network!r} tenant={tenant!r}"
+                    )
+
+            resolved_zone = attach_zone
+            break
+
+        if providers and resolved_zone is None:
+            raise ValueError(
+                f"service {service_name!r} has providers but none could be resolved "
+                f"through renderer inventory in {enterprise}/{site_name}"
+            )
+
+        if resolved_zone is not None:
+            result[service_name] = resolved_zone
+
+    return result
+
+
+def load_sites(
+    path: str | Path,
+    renderer_inventory: Dict[str, Any] | None = None,
+) -> Dict[str, SiteModel]:
     solver_path = Path(path)
     data = load_solver(solver_path)
 
     result: Dict[str, SiteModel] = {}
     solver_meta = dict(data.get("meta", {}) or {})
+    renderer_inventory = dict(renderer_inventory or {})
 
     for enterprise, site_name, site in extract_enterprise_sites(data):
         validate_site_invariants(
@@ -134,6 +392,21 @@ def load_sites(path: str | Path) -> Dict[str, SiteModel]:
 
         nodes = _build_nodes(site)
         links = _build_links(site)
+        raw_policy = dict(site.get("communicationContract", {}) or {})
+        raw_ownership = dict(site.get("ownership", {}) or {})
+        validated_inventory = _validate_renderer_inventory_for_site(
+            enterprise=enterprise,
+            site_name=site_name,
+            site=site,
+            renderer_inventory=renderer_inventory,
+        )
+        provider_zone_map = _provider_zone_map(
+            enterprise=enterprise,
+            site_name=site_name,
+            raw_policy=raw_policy,
+            raw_ownership=raw_ownership,
+            renderer_inventory=validated_inventory,
+        )
 
         key = f"{enterprise}-{site_name}"
 
@@ -144,10 +417,12 @@ def load_sites(path: str | Path) -> Dict[str, SiteModel]:
             links=links,
             single_access=assumptions.get("singleAccess", ""),
             domains={},
-            raw_policy=dict(site.get("communicationContract", {}) or {}),
+            raw_policy=raw_policy,
             raw_nat={},
             raw_links=dict(site.get("links", {}) or {}),
-            raw_ownership=dict(site.get("ownership", {}) or {}),
+            raw_ownership=raw_ownership,
+            renderer_inventory=validated_inventory,
+            provider_zone_map=provider_zone_map,
             solver_meta=solver_meta,
         )
 

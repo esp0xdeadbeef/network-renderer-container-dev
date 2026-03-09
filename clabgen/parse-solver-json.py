@@ -1,4 +1,3 @@
-# ./clabgen/parse-solver-json.py
 from __future__ import annotations
 
 import json
@@ -48,8 +47,28 @@ def _render_meta_comment(meta: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _load_renderer_inventory(base_dir: Path) -> Dict[str, Any]:
+    inventory_file = base_dir / "renderer-inputs.json"
+
+    if not inventory_file.exists():
+        return {"hosts": {}}
+
+    with inventory_file.open() as f:
+        data = json.load(f)
+
+    if not isinstance(data, dict):
+        raise ValueError("renderer-inputs.json top-level must be an object")
+
+    return data
+
+
 def render_topology(solver_json: str | Path) -> Dict[str, Any]:
-    enterprise = Enterprise.from_solver_json(solver_json)
+    repo_root = Path(__file__).resolve().parents[1]
+    renderer_inventory = _load_renderer_inventory(repo_root)
+    enterprise = Enterprise.from_solver_json(
+        solver_json,
+        renderer_inventory=renderer_inventory,
+    )
     return enterprise.render()
 
 

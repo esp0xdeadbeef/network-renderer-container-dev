@@ -1,4 +1,3 @@
-# ./clabgen/s88/CM/firewall.py
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Tuple
@@ -8,8 +7,6 @@ ZONES = ("admin", "client", "mgmt", "wan")
 TENANT_ZONES = ("admin", "client", "mgmt")
 
 
-def _debug(msg: str) -> None:
-    print(f"[FW] {msg}")
 
 
 def _zone_from_iface(name: str) -> str | None:
@@ -70,7 +67,6 @@ def _build_zone_map(node_data: Dict[str, Any]) -> Dict[str, str]:
             continue
 
         zones[zone] = f"eth{eth}"
-        _debug(f"zone detected {zone} -> eth{eth}")
 
     wan_candidates: List[int] = []
 
@@ -110,7 +106,6 @@ def _build_zone_map(node_data: Dict[str, Any]) -> Dict[str, str]:
     wan_eth = min(filtered)
 
     zones["wan"] = f"eth{wan_eth}"
-    _debug(f"zone detected wan -> eth{wan_eth}")
 
     missing = [zone for zone in ZONES if zone not in zones]
     if missing:
@@ -156,6 +151,27 @@ def _load_ownership(node_data: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(ownership, dict):
         raise RuntimeError("ownership must be an object")
     return ownership
+
+
+def _load_provider_zone_map(node_data: Dict[str, Any]) -> Dict[str, str]:
+    direct = node_data.get("provider_zone_map")
+    if isinstance(direct, dict):
+        return {
+            str(k): str(v)
+            for k, v in direct.items()
+            if isinstance(k, str) and isinstance(v, str)
+        }
+
+    site_obj = _load_site_context(node_data)
+    from_site = site_obj.get("providerZoneMap", {})
+    if not isinstance(from_site, dict):
+        return {}
+
+    return {
+        str(k): str(v)
+        for k, v in from_site.items()
+        if isinstance(k, str) and isinstance(v, str)
+    }
 
 
 def _traffic_map(contract: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
@@ -232,7 +248,11 @@ def _endpoint_tenant_map(ownership: Dict[str, Any]) -> Dict[str, str]:
     return result
 
 
-def _service_zone_map(contract: Dict[str, Any], ownership: Dict[str, Any]) -> Dict[str, str]:
+def _service_zone_map(contract: Dict[str, Any], ownership: Dict[str, Any], node_data: Dict[str, Any]) -> Dict[str, str]:
+    resolved = _load_provider_zone_map(node_data)
+    if resolved:
+        return resolved
+
     result: Dict[str, str] = {}
     endpoint_tenants = _endpoint_tenant_map(ownership)
 
@@ -393,12 +413,11 @@ def render(role: str, node_name: str, node_data: Dict[str, Any]) -> List[str]:
     if role != "policy":
         return []
 
-    _debug(f"render called role={role} node={node_name}")
 
     zones = _build_zone_map(node_data)
     contract = _load_contract(node_data)
     ownership = _load_ownership(node_data)
-    service_zones = _service_zone_map(contract, ownership)
+    service_zones = _service_zone_map(contract, ownership, node_data)
 
     relations = contract.get("relations")
     if not isinstance(relations, list):
@@ -451,7 +470,6 @@ def render(role: str, node_name: str, node_data: Dict[str, Any]) -> List[str]:
                                 continue
                             emitted_rules.add(rule)
                             cmds.append(rule)
-                            _debug(f"rule generated: {rule}")
 
     cmds.append("echo '[FW] resulting ruleset:'")
     cmds.append("nft list table inet fw")

@@ -1,4 +1,3 @@
-# ./clabgen/s88/Unit/base.py
 from __future__ import annotations
 
 from typing import Dict, List, Tuple, Any, Callable
@@ -95,10 +94,15 @@ def _node_extra(site: SiteModel) -> Dict[str, Any]:
                 "site": {
                     site.site: {
                         "communicationContract": dict(site.raw_policy or {}),
+                        "ownership": dict(site.raw_ownership or {}),
+                        "rendererInventory": dict(site.renderer_inventory or {}),
+                        "providerZoneMap": dict(site.provider_zone_map or {}),
                     }
                 }
             }
-        }
+        },
+        "renderer_inventory": dict(site.renderer_inventory or {}),
+        "provider_zone_map": dict(site.provider_zone_map or {}),
     }
 
 

@@ -1,4 +1,3 @@
-# ./clabgen/s88/enterprise/enterprise.py
 from __future__ import annotations
 
 from typing import Dict, Any, List
@@ -40,8 +39,12 @@ class Enterprise:
         self.sites = sites
 
     @classmethod
-    def from_solver_json(cls, solver_json: str | Path) -> "Enterprise":
-        sites = load_sites(solver_json)
+    def from_solver_json(
+        cls,
+        solver_json: str | Path,
+        renderer_inventory: Dict[str, Any] | None = None,
+    ) -> "Enterprise":
+        sites = load_sites(solver_json, renderer_inventory=renderer_inventory)
         return cls(sites)
 
     def render(self) -> Dict[str, Any]:
