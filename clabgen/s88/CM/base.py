@@ -1,4 +1,4 @@
-# clabgen/s88/CM/base.py
+# ./clabgen/s88/CM/base.py
 from __future__ import annotations
 
 from typing import Callable, Dict, List, Any
@@ -9,22 +9,29 @@ from .nat import render as render_nat
 from .firewall import render as render_firewall
 
 
-CM_BY_ROLE: Dict[str, List[Callable[[str, str, Dict[str, Any]], List[str]]]] = {
-    "access": [render_empty],
-    "client": [render_empty],
-    "core": [render_forwarding],
-    "policy": [render_forwarding, render_firewall],
-    "upstream-selector": [render_forwarding],
-    "wan-peer": [render_forwarding, render_nat],
-    "isp": [render_forwarding],
+CM_BY_ROLE: Dict[str, List[tuple[str, Callable[[Dict[str, Any]], List[str]]]]] = {
+    "access": [("empty", render_empty)],
+    "client": [("empty", render_empty)],
+    "core": [("forwarding", render_forwarding)],
+    "policy": [("forwarding", render_forwarding), ("firewall", render_firewall)],
+    "upstream-selector": [("forwarding", render_forwarding)],
+    "wan-peer": [("forwarding", render_forwarding), ("nat", render_nat)],
+    "isp": [("forwarding", render_forwarding)],
 }
 
 
-def render(role: str, node_name: str, node_data: Dict[str, Any]) -> List[str]:
+def render(role: str, cm_inputs: Dict[str, Any]) -> List[str]:
     if role not in CM_BY_ROLE:
-        raise ValueError(f"No CM mapping for role={role!r} node={node_name!r}")
+        raise ValueError(f"No CM mapping for role={role!r}")
+
+    cm_inputs = dict(cm_inputs or {})
 
     cmds: List[str] = []
-    for fn in CM_BY_ROLE[role]:
-        cmds.extend(fn(role, node_name, node_data))
+    for input_name, fn in CM_BY_ROLE[role]:
+        module_input = cm_inputs.get(input_name, {})
+        if not isinstance(module_input, dict):
+            raise ValueError(
+                f"CM input {input_name!r} for role={role!r} must be an object"
+            )
+        cmds.extend(fn(module_input))
     return cmds

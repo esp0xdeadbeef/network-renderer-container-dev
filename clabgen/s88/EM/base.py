@@ -13,7 +13,12 @@ from .roles import (
 from .default import render as render_default
 
 
-def _parse(role: str, node_name: str, node_data: Dict[str, Any], eth_map: Dict[str, int]) -> Dict[str, Any]:
+def _parse(
+    role: str,
+    node_name: str,
+    node_data: Dict[str, Any],
+    eth_map: Dict[str, int],
+) -> Dict[str, Any]:
     r = str(role or "").strip()
 
     if r == "access":
@@ -34,6 +39,29 @@ def _parse(role: str, node_name: str, node_data: Dict[str, Any], eth_map: Dict[s
     return {"node": node_name, "role": r, "links": {}}
 
 
+def _default_cm_inputs(role: str, node_data: Dict[str, Any]) -> Dict[str, Any]:
+    cm_inputs: Dict[str, Any] = {}
+
+    if role in {"core", "policy", "upstream-selector", "wan-peer", "isp"}:
+        cm_inputs["forwarding"] = {
+            "enable_ipv4": True,
+            "enable_ipv6": True,
+            "disable_eth0": role not in {"wan-peer", "isp"},
+        }
+
+    if role == "policy":
+        policy_cm_inputs = (node_data.get("cm_inputs", {}) or {}).get("firewall", {})
+        if isinstance(policy_cm_inputs, dict):
+            cm_inputs["firewall"] = policy_cm_inputs
+
+    if role == "wan-peer":
+        cm_inputs["nat"] = {
+            "wan_interface": "eth0",
+        }
+
+    return cm_inputs
+
+
 def render(
     role: str,
     node_name: str,
@@ -47,5 +75,6 @@ def render(
 
     parsed = _parse(role, node_name, node_data, eth_map)
     node_data["_s88_links"] = parsed
+    node_data["_cm_inputs"] = _default_cm_inputs(role, node_data)
 
     return render_default(role, node_name, node_data, eth_map)

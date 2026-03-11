@@ -333,6 +333,7 @@ def render(
     cmds.extend(_render_static_routes(node_data, eth_map))
     cmds.extend(_render_default_routes(node_data, eth_map))
 
-    cmds.extend(render_cm(role, node_name, node_data))
+    _ = node_name
+    cmds.extend(render_cm(role, node_data.get("_cm_inputs", {})))
 
     return cmds

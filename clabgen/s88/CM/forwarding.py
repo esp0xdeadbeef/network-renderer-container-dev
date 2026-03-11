@@ -4,24 +4,23 @@ from __future__ import annotations
 from typing import List, Dict, Any
 
 
-def render(role: str, node_name: str, node_data: Dict[str, Any]) -> List[str]:
-    _ = node_name
-    _ = node_data
+def render(input_data: Dict[str, Any]) -> List[str]:
+    enable_ipv4 = bool(input_data.get("enable_ipv4", False))
+    enable_ipv6 = bool(input_data.get("enable_ipv6", False))
+    disable_eth0 = bool(input_data.get("disable_eth0", False))
 
-    if role in {"core", "policy", "upstream-selector", "wan-peer", "isp"}:
-        cmds = [
-            "sysctl -w net.ipv4.ip_forward=1",
-            "sysctl -w net.ipv6.conf.all.forwarding=1",
-        ]
+    cmds: List[str] = []
 
-        if role not in {"wan-peer", "isp"}:
-            cmds.extend(
-                [
-                    "sysctl -w net.ipv4.conf.eth0.forwarding=0",
-                    "sysctl -w net.ipv6.conf.eth0.forwarding=0",
-                ]
-            )
+    if enable_ipv4:
+        cmds.append("sysctl -w net.ipv4.ip_forward=1")
 
-        return cmds
+    if enable_ipv6:
+        cmds.append("sysctl -w net.ipv6.conf.all.forwarding=1")
 
-    return []
+    if disable_eth0:
+        if enable_ipv4:
+            cmds.append("sysctl -w net.ipv4.conf.eth0.forwarding=0")
+        if enable_ipv6:
+            cmds.append("sysctl -w net.ipv6.conf.eth0.forwarding=0")
+
+    return cmds

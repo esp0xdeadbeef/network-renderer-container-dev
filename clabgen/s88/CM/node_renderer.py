@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Dict, Any, List
 
-from clabgen.s88.CM.node_context import build_node_context
 from clabgen.s88.CM import firewall
 
 
@@ -12,24 +11,17 @@ def render_node_exec(
     node_data: Dict[str, Any],
     node_links: Dict[str, Any],
 ) -> List[str]:
+    _ = model
+    _ = node_name
+    _ = node_links
 
-    role = node_data.get("role")
-
-    node_ctx = build_node_context(
-        model=model,
-        node_name=node_name,
-        node_data=node_data,
-        node_links=node_links,
-    )
+    cm_inputs = node_data.get("cm_inputs", {})
+    if not isinstance(cm_inputs, dict):
+        cm_inputs = {}
 
     exec_cmds: List[str] = []
-
-    exec_cmds.extend(
-        firewall.render(
-            role=role,
-            node_name=node_name,
-            node_data=node_ctx,
-        )
-    )
+    firewall_input = cm_inputs.get("firewall", {})
+    if isinstance(firewall_input, dict):
+        exec_cmds.extend(firewall.render(firewall_input))
 
     return exec_cmds

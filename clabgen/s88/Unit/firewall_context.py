@@ -71,7 +71,11 @@ def _contract_external_names(contract: Dict[str, Any]) -> List[str]:
     return sorted(result)
 
 
-def _policy_peer_map(site: SiteModel, policy_node_name: str, eth_map: Dict[str, int]) -> List[Dict[str, Any]]:
+def _policy_peer_map(
+    site: SiteModel,
+    policy_node_name: str,
+    eth_map: Dict[str, int],
+) -> List[Dict[str, Any]]:
     results: List[Dict[str, Any]] = []
 
     for _, link in sorted(site.links.items(), key=lambda item: item[0]):
@@ -142,18 +146,13 @@ def _access_node_tenant_zone(access_node_name: str, site: SiteModel) -> str:
     return next(iter(tenant_zones))
 
 
-def build_policy_firewall_context(
+def _build_policy_zone_interfaces(
     site: SiteModel,
     policy_node_name: str,
     eth_map: Dict[str, int],
-) -> Dict[str, Any]:
-    contract = dict(site.raw_policy or {})
-    required_tenants = set(_contract_tenant_names(contract))
-    required_externals = set(_contract_external_names(contract))
-
-    print("[FW DEBUG] tenants from contract:", sorted(required_tenants))
-    print("[FW DEBUG] externals from contract:", sorted(required_externals))
-
+    required_tenants: set[str],
+    required_externals: set[str],
+) -> Dict[str, str]:
     zones: Dict[str, str] = {}
     wan_if: str | None = None
 
@@ -167,7 +166,6 @@ def build_policy_firewall_context(
 
         if peer_node.role == "access":
             tenant_zone = _access_node_tenant_zone(peer_name, site)
-            print(f"[FW DEBUG] access node {peer_name} → tenant {tenant_zone} → {iface}")
 
             if tenant_zone in zones and zones[tenant_zone] != iface:
                 raise RuntimeError(
@@ -182,15 +180,12 @@ def build_policy_firewall_context(
                 raise RuntimeError("multiple WAN interfaces detected")
 
             wan_if = iface
-            print(f"[FW DEBUG] upstream-selector {peer_name} → wan → {iface}")
             continue
 
     if wan_if is None:
         raise RuntimeError("wan cannot be resolved from topology")
 
     zones["wan"] = wan_if
-
-    print("[FW DEBUG] final zone map:", zones)
 
     for tenant in required_tenants:
         if tenant not in zones:
@@ -204,10 +199,73 @@ def build_policy_firewall_context(
                 f"external zone {external} cannot be mapped from topology"
             )
 
+    return zones
+
+
+def _build_policy_rules(
+    contract: Dict[str, Any],
+    zone_interfaces: Dict[str, str],
+) -> List[Dict[str, Any]]:
+    rules: List[Dict[str, Any]] = []
+
+    for relation in _relation_objects(contract):
+        src_members = _members(relation.get("from"))
+        dst_obj = relation.get("to")
+
+        if dst_obj == "any":
+            dst_members = list(zone_interfaces.keys())
+        else:
+            dst_members = _members(dst_obj)
+
+        matches = relation.get("match") or []
+        action = "accept" if relation.get("action") == "allow" else "drop"
+
+        if not isinstance(matches, list):
+            matches = []
+
+        for src_zone in src_members:
+            for dst_zone in dst_members:
+                if src_zone == dst_zone:
+                    continue
+                if src_zone not in zone_interfaces:
+                    continue
+                if dst_zone not in zone_interfaces:
+                    continue
+
+                rules.append(
+                    {
+                        "src_zone": src_zone,
+                        "dst_zone": dst_zone,
+                        "action": action,
+                        "matches": [m for m in matches if isinstance(m, dict)],
+                    }
+                )
+
+    return rules
+
+
+def build_policy_firewall_cm_input(
+    site: SiteModel,
+    policy_node_name: str,
+    eth_map: Dict[str, int],
+) -> Dict[str, Any]:
+    contract = dict(site.raw_policy or {})
+    required_tenants = set(_contract_tenant_names(contract))
+    required_externals = set(_contract_external_names(contract))
+
+    zone_interfaces = _build_policy_zone_interfaces(
+        site=site,
+        policy_node_name=policy_node_name,
+        eth_map=eth_map,
+        required_tenants=required_tenants,
+        required_externals=required_externals,
+    )
+
+    rules = _build_policy_rules(contract, zone_interfaces)
+
     return {
-        "zones": zones,
-        "required_tenants": sorted(required_tenants),
-        "required_externals": sorted(required_externals),
+        "zone_interfaces": zone_interfaces,
+        "rules": rules,
     }
 
 
@@ -219,7 +277,7 @@ def build_node_firewall_context(
 ) -> Dict[str, Any]:
     if node.role == "policy":
         return {
-            "policy": build_policy_firewall_context(site, node_name, eth_map),
+            "firewall": build_policy_firewall_cm_input(site, node_name, eth_map),
         }
 
     return {}

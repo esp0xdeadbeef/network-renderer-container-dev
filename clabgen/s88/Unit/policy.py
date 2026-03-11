@@ -15,7 +15,7 @@ def render(
     extra: Dict[str, Any],
 ) -> Dict[str, Any]:
     merged_extra = dict(extra)
-    merged_extra["firewall_context"] = build_node_firewall_context(
+    merged_extra["cm_inputs"] = build_node_firewall_context(
         site=site,
         node_name=node_name,
         node=node,
