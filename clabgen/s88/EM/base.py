@@ -39,7 +39,11 @@ def _parse(
     return {"node": node_name, "role": r, "links": {}}
 
 
-def _default_cm_inputs(role: str, node_data: Dict[str, Any]) -> Dict[str, Any]:
+def _default_cm_inputs(
+    role: str,
+    node_data: Dict[str, Any],
+    parsed: Dict[str, Any],
+) -> Dict[str, Any]:
     cm_inputs: Dict[str, Any] = {}
 
     if role in {"core", "policy", "upstream-selector", "wan-peer", "isp"}:
@@ -49,15 +53,26 @@ def _default_cm_inputs(role: str, node_data: Dict[str, Any]) -> Dict[str, Any]:
             "disable_eth0": role not in {"wan-peer", "isp"},
         }
 
+    if role == "core":
+        wan_link = ((parsed.get("links") or {}).get("wan") or {})
+        wan_eth = wan_link.get("eth")
+        if isinstance(wan_eth, int):
+            cm_inputs["wan_firewall"] = {
+                "wan_interfaces": [f"eth{wan_eth}"],
+            }
+
     if role == "policy":
-        policy_cm_inputs = (node_data.get("cm_inputs", {}) or {}).get("firewall", {})
-        if isinstance(policy_cm_inputs, dict):
-            cm_inputs["firewall"] = policy_cm_inputs
+        policy_firewall_state = node_data.get("policy_firewall_state", {})
+        if isinstance(policy_firewall_state, dict):
+            cm_inputs["firewall"] = policy_firewall_state
 
     if role == "wan-peer":
-        cm_inputs["nat"] = {
-            "wan_interface": "eth0",
-        }
+        fabric_link = ((parsed.get("links") or {}).get("fabric") or {})
+        fabric_eth = fabric_link.get("eth")
+        if isinstance(fabric_eth, int):
+            cm_inputs["nat"] = {
+                "wan_interface": f"eth{fabric_eth}",
+            }
 
     return cm_inputs
 
@@ -75,6 +90,6 @@ def render(
 
     parsed = _parse(role, node_name, node_data, eth_map)
     node_data["_s88_links"] = parsed
-    node_data["_cm_inputs"] = _default_cm_inputs(role, node_data)
+    node_data["_cm_inputs"] = _default_cm_inputs(role, node_data, parsed)
 
     return render_default(role, node_name, node_data, eth_map)

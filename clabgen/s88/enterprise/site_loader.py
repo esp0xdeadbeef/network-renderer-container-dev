@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Any
 from pathlib import Path
+import ipaddress
 
 from clabgen.solver import (
     load_solver,
@@ -82,6 +83,16 @@ def _build_interfaces(
             upstream=fb["upstream"],
         )
 
+        print(
+            "[site_loader] interface:"
+            f" node={node_name}"
+            f" ifname={link_key}"
+            f" kind={fb['kind']}"
+            f" upstream={fb['upstream']}"
+            f" addr4={fb['addr4']}"
+            f" addr6={fb['addr6']}"
+        )
+
     return interfaces
 
 
@@ -111,6 +122,14 @@ def _build_links(site: Dict[str, Any]) -> Dict[str, LinkModel]:
             name=lk,
             kind=lo.get("kind", "lan"),
             endpoints=lo.get("endpoints", {}),
+        )
+
+        print(
+            "[site_loader] link:"
+            f" name={lk}"
+            f" kind={lo.get('kind', 'lan')}"
+            f" uplink={lo.get('uplink') or lo.get('upstream')}"
+            f" endpoints={sorted((lo.get('endpoints') or {}).keys())}"
         )
 
     return links
@@ -301,13 +320,6 @@ def _provider_zone_map(
                     f"has no renderer placement in {enterprise}/{site_name}"
                 )
 
-            attach_node = host.get("attach_node")
-            if not isinstance(attach_node, str) or not attach_node:
-                raise ValueError(
-                    f"service provider {provider!r} for service {service_name!r} "
-                    f"has invalid attach_node in renderer inventory"
-                )
-
             attach_network = host.get("attach_network")
             if not isinstance(attach_network, str) or not attach_network:
                 raise ValueError(
@@ -338,6 +350,35 @@ def _provider_zone_map(
     return result
 
 
+def _tenant_prefix_owners(site: Dict[str, Any]) -> Dict[str, str]:
+    raw = dict(site.get("tenantPrefixOwners", {}) or {})
+    result: Dict[str, str] = {}
+
+    for raw_key, raw_value in raw.items():
+        if not isinstance(raw_key, str) or not raw_key:
+            continue
+
+        if not isinstance(raw_value, dict):
+            continue
+
+        dst = raw_value.get("dst")
+        net_name = raw_value.get("netName")
+
+        if not isinstance(dst, str) or not dst:
+            continue
+        if not isinstance(net_name, str) or not net_name:
+            continue
+
+        try:
+            normalized = str(ipaddress.ip_network(dst, strict=False))
+        except ValueError:
+            continue
+
+        result[normalized] = net_name
+
+    return result
+
+
 def load_sites(
     path: str | Path,
     renderer_inventory: Dict[str, Any] | None = None,
@@ -350,6 +391,8 @@ def load_sites(
     renderer_inventory = dict(renderer_inventory or {})
 
     for enterprise, site_name, site in extract_enterprise_sites(data):
+        print(f"[site_loader] site={enterprise}/{site_name}")
+
         validate_site_invariants(
             site,
             context={"enterprise": enterprise, "site": site_name},
@@ -391,6 +434,9 @@ def load_sites(
             renderer_inventory=validated_inventory,
             provider_zone_map=provider_zone_map,
             solver_meta=solver_meta,
+            policy_node_name=str(site.get("policyNodeName", "") or ""),
+            upstream_selector_node_name=str(site.get("upstreamSelectorNodeName", "") or ""),
+            tenant_prefix_owners=_tenant_prefix_owners(site),
         )
 
     return result

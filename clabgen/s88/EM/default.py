@@ -1,3 +1,4 @@
+# ./clabgen/s88/EM/default.py
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -120,27 +121,94 @@ def _normalize_prefix(dst: str) -> str:
         return dst
 
 
+def _addr_ip(addr: str | None) -> str | None:
+    if not isinstance(addr, str) or not addr:
+        return None
+    try:
+        return str(ipaddress.ip_interface(addr).ip)
+    except Exception:
+        return None
+
+
+def _conflicts_with_wan_peer(
+    node: Dict[str, Any],
+    ifname: str,
+    addr: str | None,
+) -> bool:
+    ip = _addr_ip(addr)
+    if ip is None:
+        return False
+
+    interfaces = node.get("interfaces", {}) or {}
+
+    for other_ifname, other_iface in interfaces.items():
+        if other_ifname == ifname:
+            continue
+        if not isinstance(other_iface, dict):
+            continue
+        if other_iface.get("kind") != "wan":
+            continue
+
+        peer4 = _peer_in_subnet(other_iface.get("addr4"))
+        peer6 = _peer_in_subnet(other_iface.get("addr6"))
+
+        if ip == peer4 or ip == peer6:
+            return True
+
+    return False
+
+
 def _connected_prefixes(node: Dict[str, Any]) -> tuple[set[str], set[str]]:
     connected4: set[str] = set()
     connected6: set[str] = set()
 
-    for iface in (node.get("interfaces", {}) or {}).values():
+    for ifname, iface in (node.get("interfaces", {}) or {}).items():
         addr4 = iface.get("addr4")
         addr6 = iface.get("addr6")
 
-        if isinstance(addr4, str) and addr4:
+        if isinstance(addr4, str) and addr4 and not _conflicts_with_wan_peer(node, ifname, addr4):
             try:
                 connected4.add(str(ipaddress.ip_interface(addr4).network))
             except Exception:
                 pass
 
-        if isinstance(addr6, str) and addr6:
+        if isinstance(addr6, str) and addr6 and not _conflicts_with_wan_peer(node, ifname, addr6):
             try:
                 connected6.add(str(ipaddress.ip_interface(addr6).network))
             except Exception:
                 pass
 
     return connected4, connected6
+
+
+def _local_ips(node: Dict[str, Any]) -> tuple[set[str], set[str]]:
+    local4: set[str] = set()
+    local6: set[str] = set()
+
+    for ifname, iface in (node.get("interfaces", {}) or {}).items():
+        addr4 = iface.get("addr4")
+        addr6 = iface.get("addr6")
+        ll6 = iface.get("ll6")
+
+        if isinstance(addr4, str) and addr4 and not _conflicts_with_wan_peer(node, ifname, addr4):
+            try:
+                local4.add(str(ipaddress.ip_interface(_normalize_l3_addr(addr4, iface)).ip))
+            except Exception:
+                pass
+
+        if isinstance(addr6, str) and addr6 and not _conflicts_with_wan_peer(node, ifname, addr6):
+            try:
+                local6.add(str(ipaddress.ip_interface(_normalize_l3_addr(_canon_v6(addr6), iface)).ip))
+            except Exception:
+                pass
+
+        if isinstance(ll6, str) and ll6 and not _conflicts_with_wan_peer(node, ifname, ll6):
+            try:
+                local6.add(str(ipaddress.ip_interface(_canon_v6(ll6)).ip))
+            except Exception:
+                pass
+
+    return local4, local6
 
 
 def _peer_in_subnet(cidr: str | None) -> str | None:
@@ -164,6 +232,44 @@ def _peer_in_subnet(cidr: str | None) -> str | None:
             return str(cand)
 
     return None
+
+
+def _effective_via4(node: Dict[str, Any], iface: Dict[str, Any], route: Dict[str, Any]) -> str | None:
+    via = _via4(route)
+    local4, _ = _local_ips(node)
+
+    if via in local4:
+        via = None
+
+    if not via and route.get("proto") == "uplink":
+        via = _peer_in_subnet(iface.get("addr4"))
+
+    if via in local4:
+        via = _peer_in_subnet(iface.get("addr4"))
+
+    if via in local4:
+        return None
+
+    return via
+
+
+def _effective_via6(node: Dict[str, Any], iface: Dict[str, Any], route: Dict[str, Any]) -> str | None:
+    via = _via6(route)
+    _, local6 = _local_ips(node)
+
+    if via in local6:
+        via = None
+
+    if not via and route.get("proto") == "uplink":
+        via = _peer_in_subnet(iface.get("addr6"))
+
+    if via in local6:
+        via = _peer_in_subnet(iface.get("addr6"))
+
+    if via in local6:
+        return None
+
+    return via
 
 
 def _render_interfaces(node: Dict[str, Any], eth_map: Dict[str, int]) -> List[str]:
@@ -200,7 +306,7 @@ def _render_addressing(node: Dict[str, Any], eth_map: Dict[str, int]) -> List[st
         addr6 = iface.get("addr6")
         ll6 = iface.get("ll6")
 
-        if isinstance(addr4, str) and addr4:
+        if isinstance(addr4, str) and addr4 and not _conflicts_with_wan_peer(node, ifname, addr4):
             addr4 = _normalize_l3_addr(addr4, iface)
             peer = _p2p_peer(addr4)
             if peer:
@@ -212,7 +318,7 @@ def _render_addressing(node: Dict[str, Any], eth_map: Dict[str, int]) -> List[st
             else:
                 cmds.append(f"ip addr replace {addr4} dev eth{eth}")
 
-        if isinstance(addr6, str) and addr6:
+        if isinstance(addr6, str) and addr6 and not _conflicts_with_wan_peer(node, ifname, addr6):
             canon = _canon_v6(addr6)
             canon = _normalize_l3_addr(canon, iface)
             peer = _p2p_peer(canon)
@@ -225,7 +331,7 @@ def _render_addressing(node: Dict[str, Any], eth_map: Dict[str, int]) -> List[st
             else:
                 cmds.append(f"ip -6 addr replace {canon} dev eth{eth}")
 
-        if isinstance(ll6, str) and ll6:
+        if isinstance(ll6, str) and ll6 and not _conflicts_with_wan_peer(node, ifname, ll6):
             cmds.append(f"ip -6 addr replace {_canon_v6(ll6)} dev eth{eth}")
 
     return cmds
@@ -246,7 +352,7 @@ def _render_static_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> List
 
         for r in routes["ipv4"]:
             dst = _dst(r)
-            via = _via4(r)
+            via = _effective_via4(node, iface, r)
             if not dst or not via or dst == "0.0.0.0/0":
                 continue
             dst = _normalize_prefix(dst)
@@ -262,7 +368,7 @@ def _render_static_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> List
 
         for r in routes["ipv6"]:
             dst = _dst(r)
-            via = _via6(r)
+            via = _effective_via6(node, iface, r)
             if not dst or not via or dst == "::/0":
                 continue
             dst = _normalize_prefix(dst)
@@ -294,9 +400,7 @@ def _render_default_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> Lis
         for r in routes["ipv4"]:
             if _dst(r) != "0.0.0.0/0":
                 continue
-            via = _via4(r)
-            if not via and r.get("proto") == "uplink":
-                via = _peer_in_subnet(iface.get("addr4"))
+            via = _effective_via4(node, iface, r)
             if via:
                 cmd = f"ip route replace default via {via} dev eth{eth} onlink"
                 if cmd not in seen:
@@ -306,9 +410,7 @@ def _render_default_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> Lis
         for r in routes["ipv6"]:
             if _dst(r) != "::/0":
                 continue
-            via = _via6(r)
-            if not via and r.get("proto") == "uplink":
-                via = _peer_in_subnet(iface.get("addr6"))
+            via = _effective_via6(node, iface, r)
             if via:
                 cmd = f"ip -6 route replace default via {via} dev eth{eth} onlink"
                 if cmd not in seen:
@@ -330,8 +432,10 @@ def render(
 
     cmds.extend(_render_interfaces(node_data, eth_map))
     cmds.extend(_render_addressing(node_data, eth_map))
-    cmds.extend(_render_static_routes(node_data, eth_map))
-    cmds.extend(_render_default_routes(node_data, eth_map))
+
+    if role != "wan-peer":
+        cmds.extend(_render_static_routes(node_data, eth_map))
+        cmds.extend(_render_default_routes(node_data, eth_map))
 
     _ = node_name
     cmds.extend(render_cm(role, node_data.get("_cm_inputs", {})))

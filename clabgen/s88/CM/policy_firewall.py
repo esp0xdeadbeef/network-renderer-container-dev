@@ -1,3 +1,4 @@
+# ./clabgen/s88/CM/policy_firewall.py
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -38,7 +39,9 @@ def _rule_for_match(
 
     rule = f'nft add rule inet fw forward iifname "{src_if}" oifname "{dst_if}"'
 
-    if proto:
+    if proto == "icmp":
+        rule += " meta l4proto icmp"
+    elif proto:
         rule += f" {proto}"
 
     if dports:

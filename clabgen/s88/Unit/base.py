@@ -15,15 +15,19 @@ from clabgen.s88.Unit.wan_peer import render as render_wan_peer
 
 NodeRenderer = Callable[[SiteModel, str, NodeModel, Dict[str, int], Dict[str, Any]], Dict[str, Any]]
 
+MAX_BRIDGE_NAME = 15
 
-def _short_bridge(name: str) -> str:
-    h = hashlib.blake2s(name.encode(), digest_size=6).hexdigest()
-    return f"br-{h}"
+
+def _bridge_name(seed: str) -> str:
+    h = hashlib.blake2s(seed.encode(), digest_size=6).hexdigest()
+    name = f"br-{h}"
+    return name[:MAX_BRIDGE_NAME]
 
 
 def _host_ifname(bridge: str) -> str:
     h = hashlib.blake2s(bridge.encode(), digest_size=2).hexdigest()
-    return f"veth-{bridge[:6]}-{h}"
+    name = f"veth-{bridge[:6]}-{h}"
+    return name[:MAX_BRIDGE_NAME]
 
 
 def _tenant_group_key(iface_name: str, node_name: str, iface: Any) -> str:
@@ -88,22 +92,8 @@ def _renderers() -> Dict[str, NodeRenderer]:
 
 
 def _node_extra(site: SiteModel) -> Dict[str, Any]:
-    return {
-        "enterprise": {
-            site.enterprise: {
-                "site": {
-                    site.site: {
-                        "communicationContract": dict(site.raw_policy or {}),
-                        "ownership": dict(site.raw_ownership or {}),
-                        "rendererInventory": dict(site.renderer_inventory or {}),
-                        "providerZoneMap": dict(site.provider_zone_map or {}),
-                    }
-                }
-            }
-        },
-        "renderer_inventory": dict(site.renderer_inventory or {}),
-        "provider_zone_map": dict(site.provider_zone_map or {}),
-    }
+    _ = site
+    return {}
 
 
 def _render_node(
@@ -146,11 +136,28 @@ def render_units(site: SiteModel) -> Tuple[Dict[str, Any], List[Dict[str, Any]],
                 continue
 
             eth_index = eth_maps[node_name][iface]
-            endpoints.append(f"{node_name}:eth{eth_index}")
+            endpoint = f"{node_name}:eth{eth_index}"
+            endpoints.append(endpoint)
+
+            print(
+                "[render_units] endpoint collected:"
+                f" site={site.enterprise}/{site.site}"
+                f" link={link_name}"
+                f" endpoint={endpoint}"
+            )
 
         if len(endpoints) == 2:
-            bridge = _short_bridge(f"{site.enterprise}-{site.site}-{link_name}")
+            bridge = _bridge_name(f"{site.enterprise}-{site.site}-{link_name}")
             bridges.append(bridge)
+
+            print(
+                "[render_units] link endpoints created:"
+                f" site={site.enterprise}/{site.site}"
+                f" link={link_name}"
+                f" bridge={bridge}"
+                f" endpoints={endpoints}"
+            )
+
             links.append(
                 {
                     "endpoints": endpoints,
@@ -174,15 +181,39 @@ def render_units(site: SiteModel) -> Tuple[Dict[str, Any], List[Dict[str, Any]],
                 continue
 
             tenant_key = _tenant_group_key(ifname, node_name, iface)
-            tenant_groups.setdefault(tenant_key, []).append(f"{node_name}:eth{eth}")
+            endpoint = f"{node_name}:eth{eth}"
+            tenant_groups.setdefault(tenant_key, []).append(endpoint)
+
+            print(
+                "[render_units] tenant endpoint collected:"
+                f" site={site.enterprise}/{site.site}"
+                f" tenant={tenant_key}"
+                f" endpoint={endpoint}"
+            )
 
     for tenant in sorted(tenant_groups.keys()):
-        bridge = _short_bridge(f"{site.enterprise}-{site.site}-tenant-{tenant}")
+        bridge = _bridge_name(f"{site.enterprise}-{site.site}-tenant-{tenant}")
         bridges.append(bridge)
 
         endpoints = list(tenant_groups[tenant])
         if len(endpoints) == 1:
-            endpoints.append(f"host:{_host_ifname(bridge)}")
+            host_endpoint = f"host:{_host_ifname(bridge)}"
+            endpoints.append(host_endpoint)
+
+            print(
+                "[render_units] tenant host endpoint created:"
+                f" site={site.enterprise}/{site.site}"
+                f" tenant={tenant}"
+                f" endpoint={host_endpoint}"
+            )
+
+        print(
+            "[render_units] tenant link endpoints created:"
+            f" site={site.enterprise}/{site.site}"
+            f" tenant={tenant}"
+            f" bridge={bridge}"
+            f" endpoints={endpoints}"
+        )
 
         links.append(
             {

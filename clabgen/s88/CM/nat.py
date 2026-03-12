@@ -5,15 +5,40 @@ from typing import List, Dict, Any
 
 
 def render(input_data: Dict[str, Any]) -> List[str]:
-    wan_interface = input_data.get("wan_interface")
-    if not isinstance(wan_interface, str) or not wan_interface:
-        return []
+    inside_interfaces = input_data.get("inside_interfaces", [])
+    if not isinstance(inside_interfaces, list):
+        inside_interfaces = []
 
-    return [
+    routes_v4 = input_data.get("routes_v4", [])
+    routes_v6 = input_data.get("routes_v6", [])
+
+    cmds: List[str] = [
+        "sysctl -w net.ipv4.ip_forward=1",
+        "sysctl -w net.ipv6.conf.all.forwarding=1",
+        "sh -c 'for i in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > \"$i\"; done'",
         "nft flush ruleset",
         "nft add table ip nat",
         "nft 'add chain ip nat postrouting { type nat hook postrouting priority 100 ; }'",
-        f'nft add rule ip nat postrouting oifname "{wan_interface}" masquerade',
-        "ip route flush cache",
-        "ip -6 route flush cache",
+        'nft add rule ip nat postrouting oifname "eth0" masquerade',
     ]
+
+    for r in routes_v4:
+        dst = r.get("dst")
+        via = r.get("via4")
+        if isinstance(dst, str) and isinstance(via, str):
+            cmds.append(f"ip route replace {dst} via {via}")
+
+    for r in routes_v6:
+        dst = r.get("dst")
+        via = r.get("via6")
+        if isinstance(dst, str) and isinstance(via, str):
+            cmds.append(f"ip -6 route replace {dst} via {via}")
+
+    cmds.extend(
+        [
+            "ip route flush cache",
+            "ip -6 route flush cache",
+        ]
+    )
+
+    return cmds

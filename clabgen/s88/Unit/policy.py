@@ -4,7 +4,7 @@ from typing import Dict, Any
 
 from clabgen.models import NodeModel, SiteModel
 from clabgen.s88.Unit.common import render_linux_node
-from clabgen.s88.Unit.firewall_context import build_node_firewall_context
+from clabgen.s88.Unit.firewall_context import build_node_firewall_state
 
 
 def render(
@@ -15,11 +15,13 @@ def render(
     extra: Dict[str, Any],
 ) -> Dict[str, Any]:
     merged_extra = dict(extra)
-    merged_extra["cm_inputs"] = build_node_firewall_context(
-        site=site,
-        node_name=node_name,
-        node=node,
-        eth_map=eth_map,
+    merged_extra.update(
+        build_node_firewall_state(
+            site=site,
+            node_name=node_name,
+            node=node,
+            eth_map=eth_map,
+        )
     )
 
     return render_linux_node(

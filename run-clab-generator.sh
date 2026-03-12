@@ -1,17 +1,16 @@
-# ./run-clab-generator.sh
 #!/usr/bin/env bash
 set -euo pipefail
 
-#nix flake update --flake path:.
+INPUT_NIX="../network-compiler/examples/single-wan/inputs.nix"
+INPUT_NIX="../network-compiler/examples/single-wan/inputs.nix"
+TOPO_OUT="fabric.clab.yml"
+BRIDGES_OUT="vm-bridges-generated.nix"
 
-#nix run .#generate-clab-config ../network-compiler/examples/single-wan/inputs.nix
-#nix run .#generate-clab-config ../network-compiler/examples/single-wan-any-to-any-fw/inputs.nix
-nix run .#generate-clab-config ../network-compiler/examples/single-wan-with-nebula/inputs.nix
-#nix run .#generate-clab-config ../network-compiler/examples/overlay-east-west/inputs.nix
-#nix run .#generate-clab-config ../network-compiler/examples/multi-wan/inputs.nix fabric.clab.yml vm-bridges-generated.nix
+rm -f "$TOPO_OUT" "$BRIDGES_OUT"
 
+nix run .#generate-clab-config "$INPUT_NIX" "$TOPO_OUT" "$BRIDGES_OUT"
 
 echo links generated:
-sed -n '/links:/,$p' fabric.clab.yml
+sed -n '/links:/,$p' "$TOPO_OUT"
 echo bridges linux:
-cat ./vm-bridges-generated.nix
+cat "./$BRIDGES_OUT"

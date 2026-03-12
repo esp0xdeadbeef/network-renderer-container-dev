@@ -65,11 +65,30 @@ def _load_renderer_inventory(base_dir: Path) -> Dict[str, Any]:
 def render_topology(solver_json: str | Path) -> Dict[str, Any]:
     repo_root = Path(__file__).resolve().parents[1]
     renderer_inventory = _load_renderer_inventory(repo_root)
+
+    print(f"[parse-solver-json] solver_json={solver_json}")
+    print(
+        "[parse-solver-json] renderer_inventory_hosts="
+        f"{sorted((renderer_inventory.get('hosts') or {}).keys())}"
+    )
+
     enterprise = Enterprise.from_solver_json(
         solver_json,
         renderer_inventory=renderer_inventory,
     )
-    return enterprise.render()
+    rendered = enterprise.render()
+
+    for link in rendered.get("topology", {}).get("links", []):
+        endpoints = list(link.get("endpoints", []))
+        labels = dict(link.get("labels", {}) or {})
+        bridge = labels.get("clab.link.bridge")
+        print(
+            "[final-topology] link:"
+            f" bridge={bridge}"
+            f" endpoints={endpoints}"
+        )
+
+    return rendered
 
 
 def write_outputs(
@@ -77,13 +96,18 @@ def write_outputs(
     topology_out: str | Path,
     bridges_out: str | Path,
 ) -> None:
-
     solver_json = Path(solver_json)
     topology_out = Path(topology_out)
     bridges_out = Path(bridges_out)
 
+    print(
+        "[parse-solver-json] outputs:"
+        f" topology_out={topology_out}"
+        f" bridges_out={bridges_out}"
+    )
+
     with solver_json.open() as f:
-        solver = json.load(f)
+        _ = json.load(f)
 
     merged = render_topology(solver_json)
 
