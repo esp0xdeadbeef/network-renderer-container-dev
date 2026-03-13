@@ -1,0 +1,1347 @@
+🎉 A newer containerlab version (0.74.0) is available!
+Release notes: https://containerlab.dev/rn/0.74/
+Run 'sudo clab version upgrade' or see https://containerlab.dev/install/ for installation options.
+[1m╭[0m[1m──────────────────────────────────────────────────────────────────────────────[0m[1m┬[0m[1m──────────────────────────────[0m[1m┬[0m[1m─────────[0m[1m┬[0m[1m───────────────────[0m[1m╮[0m
+[1m│[0m[1m                                     Name                                     [0m[1m│[0m[1m          Kind/Image          [0m[1m│[0m[1m  State  [0m[1m│[0m[1m   IPv4/6 Address  [0m[1m│[0m
+[1m├[0m[1m──────────────────────────────────────────────────────────────────────────────[0m[1m┼[0m[1m──────────────────────────────[0m[1m┼[0m[1m─────────[0m[1m┼[0m[1m───────────────────[0m[1m┤[0m
+│ clab-fabric-esp0xdeadbeef-site-a-client-s-router-access-admin-tenant-admin   │ linux                        │ running │ 172.20.20.2       │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::2 │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-client-s-router-access-client-tenant-client │ linux                        │ running │ 172.20.20.12      │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::c │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-client-s-router-access-mgmt-tenant-mgmt     │ linux                        │ running │ 172.20.20.10      │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::a │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-s-router-access-admin                       │ linux                        │ running │ 172.20.20.8       │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::8 │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-s-router-access-client                      │ linux                        │ running │ 172.20.20.7       │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::7 │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-s-router-access-mgmt                        │ linux                        │ running │ 172.20.20.13      │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::d │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-s-router-core-nebula                        │ linux                        │ running │ 172.20.20.11      │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::b │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-s-router-core-wan                           │ linux                        │ running │ 172.20.20.3       │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::3 │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-s-router-policy                             │ linux                        │ running │ 172.20.20.5       │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::5 │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-s-router-upstream-selector                  │ linux                        │ running │ 172.20.20.6       │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::6 │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-wanp-106e2baaad9a                           │ linux                        │ running │ 172.20.20.9       │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::9 │
+├──────────────────────────────────────────────────────────────────────────────┼──────────────────────────────┼─────────┼───────────────────┤
+│ clab-fabric-esp0xdeadbeef-site-a-wanp-50fc83d84c0e                           │ linux                        │ running │ 172.20.20.4       │
+│                                                                              │ clab-frr-plus-tooling:latest │         │ 3fff:172:20:20::4 │
+╰──────────────────────────────────────────────────────────────────────────────┴──────────────────────────────┴─────────┴───────────────────╯
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-client-s-router-access-client-tenant-client
+--------------------------------------------------
+
+ROLE: client-s-router-access-client-tenant-client
+TIME: 2026-03-13T22:05:33+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if164       UP             da:e9:21:df:e3:11 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if166       UP             aa:c1:ab:37:c3:c7 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if164       UP             172.20.20.12/24 3fff:172:20:20::c/64 fe80::d8e9:21ff:fedf:e311/64 
+eth1@if166       UP             10.20.20.2/24 fd42:dead:beef:20::2/64 fe80::a8c1:abff:fe37:c3c7/64 
+
+[ ip route ]
+default via 10.20.20.1 dev eth1 onlink 
+10.20.20.0/24 dev eth1 proto kernel scope link src 10.20.20.2 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.12 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:20::/64 dev eth1 proto kernel metric 256 pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+default via fd42:dead:beef:20::1 dev eth1 metric 1024 onlink pref medium
+
+[ ip neigh ]
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 10.20.20.1 dev eth1 src 10.20.20.2 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  10.20.20.1  0.126 ms
+ 2  10.10.0.3  0.049 ms
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  10.10.0.2  0.071 ms
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  10.20.20.1  0.074 ms
+ 2  10.10.0.3  0.026 ms
+ 3  10.10.0.11  0.085 ms
+ 4  10.10.0.6  0.051 ms
+ 5  10.19.0.1  0.075 ms
+ 6  172.20.20.1  0.153 ms
+ 7  1.1.1.1  8.124 ms
+
+ [ FIREWALL - nft list ruleset]
+table ip nat {
+	chain DOCKER_OUTPUT {
+		ip daddr 127.0.0.11 tcp dport 53 counter packets 0 bytes 0 # xt_DNAT
+		ip daddr 127.0.0.11 udp dport 53 counter packets 0 bytes 0 # xt_DNAT
+	}
+
+	chain OUTPUT {
+		type nat hook output priority -100; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_OUTPUT
+	}
+
+	chain DOCKER_POSTROUTING {
+		ip saddr 127.0.0.11 tcp sport 38645 counter packets 0 bytes 0 # xt_SNAT
+		ip saddr 127.0.0.11 udp sport 38755 counter packets 0 bytes 0 # xt_SNAT
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_POSTROUTING
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-wanp-50fc83d84c0e
+--------------------------------------------------
+
+ROLE: wanp-50fc83d84c0e
+TIME: 2026-03-13T22:05:35+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if140       UP             42:05:b9:a9:94:80 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if150       UP             aa:c1:ab:c9:f9:01 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if140       UP             172.20.20.4/24 3fff:172:20:20::4/64 fe80::4005:b9ff:fea9:9480/64 
+eth1@if150       UP             10.19.0.3 peer 10.19.0.2/31 fd42:dead:beef:1900::3 peer fd42:dead:beef:1900::2/127 fe80::a8c1:abff:fec9:f901/64 
+
+[ ip route ]
+default via 172.20.20.1 dev eth0 
+10.19.0.2/31 dev eth1 proto kernel scope link src 10.19.0.3 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.4 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::2 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::2/127 dev eth1 proto kernel metric 256 pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+default via 3fff:172:20:20::1 dev eth0 metric 1024 pref medium
+
+[ ip neigh ]
+fe80::3cf8:a1ff:fe5c:570a dev eth0 lladdr 3e:f8:a1:5c:57:0a STALE 
+fe80::2854:73ff:fe11:a4da dev eth0 lladdr 2a:54:73:11:a4:da STALE 
+fe80::d8e9:21ff:fedf:e311 dev eth0 lladdr da:e9:21:df:e3:11 STALE 
+fe80::a8c1:abff:fed5:994a dev eth1 lladdr aa:c1:ab:d5:99:4a STALE 
+fe80::fc80:f1ff:fedc:293 dev eth0 lladdr fe:80:f1:dc:02:93 STALE 
+fe80::ac40:70ff:fec5:c3bb dev eth0 lladdr ae:40:70:c5:c3:bb STALE 
+fe80::f471:e8ff:fe11:58fa dev eth0 lladdr f6:71:e8:11:58:fa STALE 
+fe80::5859:70ff:fe29:e625 dev eth0 lladdr 5a:59:70:29:e6:25 STALE 
+fe80::8869:2cff:fe72:e0b5 dev eth0 lladdr 8a:69:2c:72:e0:b5 STALE 
+fe80::4071:dfff:feed:f36b dev eth0 lladdr 42:71:df:ed:f3:6b STALE 
+fe80::c487:89ff:fe04:4534 dev eth0 lladdr c6:87:89:04:45:34 STALE 
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 172.20.20.1 dev eth0 src 172.20.20.4 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  172.20.20.1  0.213 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  172.20.20.1  0.085 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  172.20.20.1  0.101 ms
+ 2  1.1.1.1  7.632 ms
+
+ [ FIREWALL - nft list ruleset]
+table ip nat {
+	chain postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		oifname "eth0" masquerade
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-s-router-access-client
+--------------------------------------------------
+
+ROLE: s-router-access-client
+TIME: 2026-03-13T22:05:39+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if143       UP             ae:40:70:c5:c3:bb <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if156       UP             aa:c1:ab:b0:9c:b2 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth2@if165       UP             aa:c1:ab:ea:36:9c <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if143       UP             172.20.20.7/24 3fff:172:20:20::7/64 fe80::ac40:70ff:fec5:c3bb/64 
+eth1@if156       UP             10.10.0.2 peer 10.10.0.3/31 fd42:dead:beef:1000::2 peer fd42:dead:beef:1000::3/127 fe80::a8c1:abff:feb0:9cb2/64 
+eth2@if165       UP             10.20.20.1/24 fd42:dead:beef:20::1/64 fe80::a8c1:abff:feea:369c/64 
+
+[ ip route ]
+default via 10.10.0.3 dev eth1 onlink 
+10.10.0.0/31 via 10.10.0.3 dev eth1 onlink 
+10.10.0.2/31 dev eth1 proto kernel scope link src 10.10.0.2 
+10.10.0.4/31 via 10.10.0.3 dev eth1 onlink 
+10.10.0.6/31 via 10.10.0.3 dev eth1 onlink 
+10.10.0.8/31 via 10.10.0.3 dev eth1 onlink 
+10.10.0.10/31 via 10.10.0.3 dev eth1 onlink 
+10.19.0.1 via 10.10.0.3 dev eth1 onlink 
+10.19.0.3 via 10.10.0.3 dev eth1 onlink 
+10.19.0.4 via 10.10.0.3 dev eth1 onlink 
+10.19.0.5 via 10.10.0.3 dev eth1 onlink 
+10.19.0.6 via 10.10.0.3 dev eth1 onlink 
+10.19.0.7 via 10.10.0.3 dev eth1 onlink 
+10.20.10.0/24 via 10.10.0.3 dev eth1 onlink 
+10.20.15.0/24 via 10.10.0.3 dev eth1 onlink 
+10.20.20.0/24 dev eth2 proto kernel scope link src 10.20.20.1 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.7 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:10::/64 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:15::/64 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:20::/64 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::/127 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::3 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::2/127 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::4/127 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::6/127 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::8/127 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::a/127 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::1 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::3 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::4 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::5 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::6 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::7 via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+fe80::/64 dev eth2 proto kernel metric 256 pref medium
+default via fd42:dead:beef:1000::3 dev eth1 metric 1024 onlink pref medium
+
+[ ip neigh ]
+10.10.0.3 dev eth1 lladdr aa:c1:ab:02:ab:05 REACHABLE 
+10.20.20.2 dev eth2 lladdr aa:c1:ab:37:c3:c7 REACHABLE 
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 10.10.0.3 dev eth1 src 10.10.0.2 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  10.10.0.3  0.096 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  10.10.0.2  0.072 ms
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  10.10.0.3  0.072 ms
+ 2  10.10.0.11  0.031 ms
+ 3  10.10.0.6  0.034 ms
+ 4  10.19.0.1  0.066 ms
+ 5  172.20.20.1  0.065 ms
+ 6  1.1.1.1  7.786 ms
+
+ [ FIREWALL - nft list ruleset]
+table ip nat {
+	chain DOCKER_OUTPUT {
+		ip daddr 127.0.0.11 tcp dport 53 counter packets 0 bytes 0 # xt_DNAT
+		ip daddr 127.0.0.11 udp dport 53 counter packets 0 bytes 0 # xt_DNAT
+	}
+
+	chain OUTPUT {
+		type nat hook output priority -100; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_OUTPUT
+	}
+
+	chain DOCKER_POSTROUTING {
+		ip saddr 127.0.0.11 tcp sport 46735 counter packets 0 bytes 0 # xt_SNAT
+		ip saddr 127.0.0.11 udp sport 60082 counter packets 0 bytes 0 # xt_SNAT
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_POSTROUTING
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-s-router-upstream-selector
+--------------------------------------------------
+
+ROLE: s-router-upstream-selector
+TIME: 2026-03-13T22:05:41+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if142       UP             fe:80:f1:dc:02:93 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth4@if137       UP             aa:c1:ab:0d:ac:fc <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth2@if147       UP             aa:c1:ab:8e:ab:9c <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth3@if161       UP             aa:c1:ab:14:25:2a <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if162       UP             aa:c1:ab:89:ac:fc <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if142       UP             172.20.20.6/24 3fff:172:20:20::6/64 fe80::fc80:f1ff:fedc:293/64 
+eth4@if137       UP             10.19.0.7/32 fd42:dead:beef:1900::7/128 fe80::a8c1:abff:fe0d:acfc/64 
+eth2@if147       UP             10.10.0.9 peer 10.10.0.8/31 fd42:dead:beef:1000::9 peer fd42:dead:beef:1000::8/127 fe80::a8c1:abff:fe8e:ab9c/64 
+eth3@if161       UP             10.10.0.11 peer 10.10.0.10/31 fd42:dead:beef:1000::b peer fd42:dead:beef:1000::a/127 fe80::a8c1:abff:fe14:252a/64 
+eth1@if162       UP             10.10.0.7 peer 10.10.0.6/31 fd42:dead:beef:1000::7 peer fd42:dead:beef:1000::6/127 fe80::a8c1:abff:fe89:acfc/64 
+
+[ ip route ]
+default via 10.10.0.6 dev eth1 onlink 
+10.10.0.0/31 via 10.10.0.10 dev eth3 onlink 
+10.10.0.2/31 via 10.10.0.10 dev eth3 onlink 
+10.10.0.4/31 via 10.10.0.10 dev eth3 onlink 
+10.10.0.6/31 dev eth1 proto kernel scope link src 10.10.0.7 
+10.10.0.8/31 dev eth2 proto kernel scope link src 10.10.0.9 
+10.10.0.10/31 dev eth3 proto kernel scope link src 10.10.0.11 
+10.19.0.1 via 10.10.0.10 dev eth3 onlink 
+10.19.0.2 via 10.10.0.10 dev eth3 onlink 
+10.19.0.3 via 10.10.0.10 dev eth3 onlink 
+10.19.0.4 via 10.10.0.6 dev eth1 onlink 
+10.19.0.5 via 10.10.0.8 dev eth2 onlink 
+10.19.0.6 via 10.10.0.10 dev eth3 onlink 
+10.20.10.0/24 via 10.10.0.10 dev eth3 onlink 
+10.20.15.0/24 via 10.10.0.10 dev eth3 onlink 
+10.20.20.0/24 via 10.10.0.10 dev eth3 onlink 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.6 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:10::/64 via fd42:dead:beef:1000::a dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:15::/64 via fd42:dead:beef:1000::a dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:20::/64 via fd42:dead:beef:1000::a dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:1000::/127 via fd42:dead:beef:1000::a dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:1000::2/127 via fd42:dead:beef:1000::a dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:1000::4/127 via fd42:dead:beef:1000::a dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:1000::6 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::6/127 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::8 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::8/127 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::a dev eth3 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::a/127 dev eth3 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::1 via fd42:dead:beef:1000::a dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:1900::2 via fd42:dead:beef:1000::a dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:1900::3 via fd42:dead:beef:1000::a dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:1900::4 via fd42:dead:beef:1000::6 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::5 via fd42:dead:beef:1000::8 dev eth2 metric 1024 onlink pref medium
+fd42:dead:beef:1900::6 via fd42:dead:beef:1000::a dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:1900::7 dev eth4 proto kernel metric 256 pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth2 proto kernel metric 256 pref medium
+fe80::/64 dev eth3 proto kernel metric 256 pref medium
+fe80::/64 dev eth4 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+default via fd42:dead:beef:1000::6 dev eth1 metric 1024 onlink pref medium
+
+[ ip neigh ]
+10.10.0.10 dev eth3 lladdr aa:c1:ab:d6:cc:ee REACHABLE 
+10.10.0.6 dev eth1 lladdr aa:c1:ab:73:61:d8 REACHABLE 
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 10.10.0.6 dev eth1 src 10.10.0.7 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  10.10.0.10  0.086 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  10.10.0.10  0.082 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  10.10.0.6  0.064 ms
+ 2  10.19.0.1  0.035 ms
+ 3  172.20.20.1  0.060 ms
+ 4  1.1.1.1  8.982 ms
+
+ [ FIREWALL - nft list ruleset]
+table ip nat {
+	chain DOCKER_OUTPUT {
+		ip daddr 127.0.0.11 tcp dport 53 counter packets 0 bytes 0 # xt_DNAT
+		ip daddr 127.0.0.11 udp dport 53 counter packets 0 bytes 0 # xt_DNAT
+	}
+
+	chain OUTPUT {
+		type nat hook output priority -100; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_OUTPUT
+	}
+
+	chain DOCKER_POSTROUTING {
+		ip saddr 127.0.0.11 tcp sport 42989 counter packets 0 bytes 0 # xt_SNAT
+		ip saddr 127.0.0.11 udp sport 48872 counter packets 0 bytes 0 # xt_SNAT
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_POSTROUTING
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-s-router-access-admin
+--------------------------------------------------
+
+ROLE: s-router-access-admin
+TIME: 2026-03-13T22:05:45+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if148       UP             2a:54:73:11:a4:da <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth2@if145       UP             aa:c1:ab:ae:dd:80 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if154       UP             aa:c1:ab:77:47:73 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if148       UP             172.20.20.8/24 3fff:172:20:20::8/64 fe80::2854:73ff:fe11:a4da/64 
+eth2@if145       UP             10.20.15.1/24 fd42:dead:beef:15::1/64 fe80::a8c1:abff:feae:dd80/64 
+eth1@if154       UP             10.10.0.0 peer 10.10.0.1/31 fd42:dead:beef:1000:: peer fd42:dead:beef:1000::1/127 fe80::a8c1:abff:fe77:4773/64 
+
+[ ip route ]
+default via 10.10.0.1 dev eth1 onlink 
+10.10.0.0/31 dev eth1 proto kernel scope link src 10.10.0.0 
+10.10.0.2/31 via 10.10.0.1 dev eth1 onlink 
+10.10.0.4/31 via 10.10.0.1 dev eth1 onlink 
+10.10.0.6/31 via 10.10.0.1 dev eth1 onlink 
+10.10.0.8/31 via 10.10.0.1 dev eth1 onlink 
+10.10.0.10/31 via 10.10.0.1 dev eth1 onlink 
+10.19.0.2 via 10.10.0.1 dev eth1 onlink 
+10.19.0.3 via 10.10.0.1 dev eth1 onlink 
+10.19.0.4 via 10.10.0.1 dev eth1 onlink 
+10.19.0.5 via 10.10.0.1 dev eth1 onlink 
+10.19.0.6 via 10.10.0.1 dev eth1 onlink 
+10.19.0.7 via 10.10.0.1 dev eth1 onlink 
+10.20.10.0/24 via 10.10.0.1 dev eth1 onlink 
+10.20.15.0/24 dev eth2 proto kernel scope link src 10.20.15.1 
+10.20.20.0/24 via 10.10.0.1 dev eth1 onlink 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.8 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:10::/64 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:15::/64 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:20::/64 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::1 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::/127 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::2/127 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::4/127 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::6/127 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::8/127 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::a/127 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::2 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::3 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::4 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::5 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::6 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::7 via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+fe80::/64 dev eth2 proto kernel metric 256 pref medium
+default via fd42:dead:beef:1000::1 dev eth1 metric 1024 onlink pref medium
+
+[ ip neigh ]
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 10.10.0.1 dev eth1 src 10.10.0.0 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  10.10.0.0  0.052 ms
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  10.10.0.1  0.250 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  10.10.0.1  0.069 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+ [ FIREWALL - nft list ruleset]
+table ip nat {
+	chain DOCKER_OUTPUT {
+		ip daddr 127.0.0.11 tcp dport 53 counter packets 0 bytes 0 # xt_DNAT
+		ip daddr 127.0.0.11 udp dport 53 counter packets 0 bytes 0 # xt_DNAT
+	}
+
+	chain OUTPUT {
+		type nat hook output priority -100; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_OUTPUT
+	}
+
+	chain DOCKER_POSTROUTING {
+		ip saddr 127.0.0.11 tcp sport 44785 counter packets 0 bytes 0 # xt_SNAT
+		ip saddr 127.0.0.11 udp sport 55740 counter packets 0 bytes 0 # xt_SNAT
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_POSTROUTING
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-s-router-core-nebula
+--------------------------------------------------
+
+ROLE: s-router-core-nebula
+TIME: 2026-03-13T22:05:48+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if159       UP             c6:87:89:04:45:34 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth3@if131       UP             aa:c1:ab:32:21:4c <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if163       UP             aa:c1:ab:73:61:d8 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth2@if169       UP             aa:c1:ab:c9:7e:b8 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if159       UP             172.20.20.11/24 3fff:172:20:20::b/64 fe80::c487:89ff:fe04:4534/64 
+eth3@if131       UP             10.19.0.4/32 fd42:dead:beef:1900::4/128 fe80::a8c1:abff:fe32:214c/64 
+eth1@if163       UP             10.10.0.6 peer 10.10.0.7/31 fd42:dead:beef:1000::6 peer fd42:dead:beef:1000::7/127 fe80::a8c1:abff:fe73:61d8/64 
+eth2@if169       UP             10.19.0.0 peer 10.19.0.1/31 fd42:dead:beef:1900:: peer fd42:dead:beef:1900::1/127 fe80::1/128 fe80::a8c1:abff:fec9:7eb8/64 
+
+[ ip route ]
+default via 10.19.0.1 dev eth2 onlink 
+10.10.0.0/31 via 10.10.0.7 dev eth1 onlink 
+10.10.0.2/31 via 10.10.0.7 dev eth1 onlink 
+10.10.0.4/31 via 10.10.0.7 dev eth1 onlink 
+10.10.0.6/31 dev eth1 proto kernel scope link src 10.10.0.6 
+10.10.0.8/31 via 10.10.0.7 dev eth1 onlink 
+10.10.0.10/31 via 10.10.0.7 dev eth1 onlink 
+10.19.0.0/31 dev eth2 proto kernel scope link src 10.19.0.0 
+10.19.0.1 via 10.10.0.7 dev eth1 onlink 
+10.19.0.2 via 10.10.0.7 dev eth1 onlink 
+10.19.0.3 via 10.10.0.7 dev eth1 onlink 
+10.19.0.5 via 10.10.0.7 dev eth1 onlink 
+10.19.0.6 via 10.10.0.7 dev eth1 onlink 
+10.19.0.7 via 10.10.0.7 dev eth1 onlink 
+10.20.10.0/24 via 10.10.0.7 dev eth1 onlink 
+10.20.15.0/24 via 10.10.0.7 dev eth1 onlink 
+10.20.20.0/24 via 10.10.0.7 dev eth1 onlink 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.11 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:10::/64 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:15::/64 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:20::/64 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::/127 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::2/127 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::4/127 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::7 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::6/127 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::8/127 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::a/127 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::1 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::1 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::/127 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::2 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::3 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::4 dev eth3 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::5 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::6 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::7 via fd42:dead:beef:1000::7 dev eth1 metric 1024 onlink pref medium
+fe80::1 dev eth2 proto kernel metric 256 pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+fe80::/64 dev eth2 proto kernel metric 256 pref medium
+fe80::/64 dev eth3 proto kernel metric 256 pref medium
+default via fd42:dead:beef:1900::1 dev eth2 metric 1024 onlink pref medium
+
+[ ip neigh ]
+10.19.0.1 dev eth2 lladdr aa:c1:ab:24:2c:58 REACHABLE 
+10.10.0.7 dev eth1 lladdr aa:c1:ab:89:ac:fc REACHABLE 
+fe80::4071:dfff:feed:f36b dev eth0 lladdr 42:71:df:ed:f3:6b STALE 
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 10.19.0.1 dev eth2 src 10.19.0.0 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  10.10.0.7  0.090 ms
+ 2  10.10.0.10  0.035 ms
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  10.10.0.7  0.064 ms
+ 2  10.10.0.10  0.025 ms
+ 3  *
+ 4  *
+ 5  *
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  10.19.0.1  0.120 ms
+ 2  172.20.20.1  0.065 ms
+ 3  1.1.1.1  8.468 ms
+
+ [ FIREWALL - nft list ruleset]
+table inet filter {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iif "lo" accept
+		ct state established,related accept
+		ct state invalid drop
+		meta l4proto ipv6-icmp accept
+		iifname "eth2" ip saddr { 0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0-255.255.255.255 } drop
+		iifname "eth2" ip6 saddr { ::1, fc00::/7, fe80::/10 } drop
+		iifname != "eth2" tcp dport 22 accept
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy accept;
+		ct state established,related accept
+		ct state invalid drop
+		iifname "eth2" ip saddr { 10.0.0.0/8, 100.64.0.0/10, 172.16.0.0/12, 192.168.0.0/16 } drop
+		iifname "eth2" ip6 saddr fc00::/7 drop
+	}
+
+	chain output {
+		type filter hook output priority filter; policy accept;
+	}
+}
+table ip nat {
+	chain postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } oifname "eth2" masquerade
+	}
+}
+table inet mangle {
+	chain forward {
+		type filter hook forward priority mangle; policy accept;
+		oifname "eth2" tcp flags syn tcp option maxseg size set rt mtu
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-client-s-router-access-mgmt-tenant-mgmt
+--------------------------------------------------
+
+ROLE: client-s-router-access-mgmt-tenant-mgmt
+TIME: 2026-03-13T22:05:52+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if152       UP             42:71:df:ed:f3:6b <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if170       UP             aa:c1:ab:36:9c:de <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if152       UP             172.20.20.10/24 3fff:172:20:20::a/64 fe80::4071:dfff:feed:f36b/64 
+eth1@if170       UP             10.20.10.2/24 fd42:dead:beef:10::2/64 fe80::a8c1:abff:fe36:9cde/64 
+
+[ ip route ]
+default via 10.20.10.1 dev eth1 onlink 
+10.20.10.0/24 dev eth1 proto kernel scope link src 10.20.10.2 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.10 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:10::/64 dev eth1 proto kernel metric 256 pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+default via fd42:dead:beef:10::1 dev eth1 metric 1024 onlink pref medium
+
+[ ip neigh ]
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 10.20.10.1 dev eth1 src 10.20.10.2 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  10.20.10.1  0.131 ms
+ 2  10.10.0.5  0.053 ms
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  10.20.10.1  0.065 ms
+ 2  10.10.0.5  0.024 ms
+ 3  *
+ 4  *
+ 5  *
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  10.20.10.1  0.084 ms
+ 2  10.10.0.5  0.035 ms
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+ [ FIREWALL - nft list ruleset]
+table ip nat {
+	chain DOCKER_OUTPUT {
+		ip daddr 127.0.0.11 tcp dport 53 counter packets 0 bytes 0 # xt_DNAT
+		ip daddr 127.0.0.11 udp dport 53 counter packets 0 bytes 0 # xt_DNAT
+	}
+
+	chain OUTPUT {
+		type nat hook output priority -100; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_OUTPUT
+	}
+
+	chain DOCKER_POSTROUTING {
+		ip saddr 127.0.0.11 tcp sport 33567 counter packets 0 bytes 0 # xt_SNAT
+		ip saddr 127.0.0.11 udp sport 46036 counter packets 0 bytes 0 # xt_SNAT
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_POSTROUTING
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-s-router-policy
+--------------------------------------------------
+
+ROLE: s-router-policy
+TIME: 2026-03-13T22:05:56+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if141       UP             3e:f8:a1:5c:57:0a <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth5@if135       UP             aa:c1:ab:49:72:72 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if153       UP             aa:c1:ab:82:3b:4c <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth2@if155       UP             aa:c1:ab:02:ab:05 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth3@if157       UP             aa:c1:ab:91:1a:28 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth4@if160       UP             aa:c1:ab:d6:cc:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if141       UP             172.20.20.5/24 3fff:172:20:20::5/64 fe80::3cf8:a1ff:fe5c:570a/64 
+eth5@if135       UP             10.19.0.6/32 fd42:dead:beef:1900::6/128 fe80::a8c1:abff:fe49:7272/64 
+eth1@if153       UP             10.10.0.1 peer 10.10.0.0/31 fd42:dead:beef:1000::1 peer fd42:dead:beef:1000::/127 fe80::a8c1:abff:fe82:3b4c/64 
+eth2@if155       UP             10.10.0.3 peer 10.10.0.2/31 fd42:dead:beef:1000::3 peer fd42:dead:beef:1000::2/127 fe80::a8c1:abff:fe02:ab05/64 
+eth3@if157       UP             10.10.0.5 peer 10.10.0.4/31 fd42:dead:beef:1000::5 peer fd42:dead:beef:1000::4/127 fe80::a8c1:abff:fe91:1a28/64 
+eth4@if160       UP             10.10.0.10 peer 10.10.0.11/31 fd42:dead:beef:1000::a peer fd42:dead:beef:1000::b/127 fe80::a8c1:abff:fed6:ccee/64 
+
+[ ip route ]
+default via 10.10.0.11 dev eth4 onlink 
+10.10.0.0/31 dev eth1 proto kernel scope link src 10.10.0.1 
+10.10.0.2/31 dev eth2 proto kernel scope link src 10.10.0.3 
+10.10.0.4/31 dev eth3 proto kernel scope link src 10.10.0.5 
+10.10.0.6/31 via 10.10.0.11 dev eth4 onlink 
+10.10.0.8/31 via 10.10.0.11 dev eth4 onlink 
+10.10.0.10/31 dev eth4 proto kernel scope link src 10.10.0.10 
+10.19.0.1 via 10.10.0.0 dev eth1 onlink 
+10.19.0.2 via 10.10.0.2 dev eth2 onlink 
+10.19.0.3 via 10.10.0.4 dev eth3 onlink 
+10.19.0.4 via 10.10.0.11 dev eth4 onlink 
+10.19.0.5 via 10.10.0.11 dev eth4 onlink 
+10.19.0.7 via 10.10.0.11 dev eth4 onlink 
+10.20.10.0/24 via 10.10.0.4 dev eth3 onlink 
+10.20.15.0/24 via 10.10.0.0 dev eth1 onlink 
+10.20.20.0/24 via 10.10.0.2 dev eth2 onlink 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.5 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:10::/64 via fd42:dead:beef:1000::4 dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:15::/64 via fd42:dead:beef:1000:: dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:20::/64 via fd42:dead:beef:1000::2 dev eth2 metric 1024 onlink pref medium
+fd42:dead:beef:1000:: dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::/127 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::2 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::2/127 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::4 dev eth3 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::4/127 dev eth3 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::6/127 via fd42:dead:beef:1000::b dev eth4 metric 1024 onlink pref medium
+fd42:dead:beef:1000::8/127 via fd42:dead:beef:1000::b dev eth4 metric 1024 onlink pref medium
+fd42:dead:beef:1000::b dev eth4 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::a/127 dev eth4 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::1 via fd42:dead:beef:1000:: dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::2 via fd42:dead:beef:1000::2 dev eth2 metric 1024 onlink pref medium
+fd42:dead:beef:1900::3 via fd42:dead:beef:1000::4 dev eth3 metric 1024 onlink pref medium
+fd42:dead:beef:1900::4 via fd42:dead:beef:1000::b dev eth4 metric 1024 onlink pref medium
+fd42:dead:beef:1900::5 via fd42:dead:beef:1000::b dev eth4 metric 1024 onlink pref medium
+fd42:dead:beef:1900::6 dev eth5 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::7 via fd42:dead:beef:1000::b dev eth4 metric 1024 onlink pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth5 proto kernel metric 256 pref medium
+fe80::/64 dev eth4 proto kernel metric 256 pref medium
+fe80::/64 dev eth2 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+fe80::/64 dev eth3 proto kernel metric 256 pref medium
+default via fd42:dead:beef:1000::b dev eth4 metric 1024 onlink pref medium
+
+[ ip neigh ]
+10.10.0.0 dev eth1 lladdr aa:c1:ab:77:47:73 REACHABLE 
+10.10.0.2 dev eth2 lladdr aa:c1:ab:b0:9c:b2 REACHABLE 
+10.10.0.11 dev eth4 lladdr aa:c1:ab:14:25:2a REACHABLE 
+10.10.0.4 dev eth3 lladdr aa:c1:ab:0b:8f:a6 DELAY 
+fe80::a8c1:abff:fe0b:8fa6 dev eth3 lladdr aa:c1:ab:0b:8f:a6 STALE 
+fe80::a8c1:abff:feb0:9cb2 dev eth2 lladdr aa:c1:ab:b0:9c:b2 STALE 
+fe80::a8c1:abff:fe77:4773 dev eth1 lladdr aa:c1:ab:77:47:73 STALE 
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 10.10.0.11 dev eth4 src 10.10.0.10 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  10.10.0.0  0.063 ms
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  10.10.0.2  0.056 ms
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  10.10.0.11  0.061 ms
+ 2  10.10.0.6  0.025 ms
+ 3  10.19.0.1  0.035 ms
+ 4  172.20.20.1  0.044 ms
+ 5  1.1.1.1  8.761 ms
+
+ [ FIREWALL - nft list ruleset]
+table ip nat {
+	chain DOCKER_OUTPUT {
+		ip daddr 127.0.0.11 tcp dport 53 counter packets 0 bytes 0 # xt_DNAT
+		ip daddr 127.0.0.11 udp dport 53 counter packets 0 bytes 0 # xt_DNAT
+	}
+
+	chain OUTPUT {
+		type nat hook output priority -100; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_OUTPUT
+	}
+
+	chain DOCKER_POSTROUTING {
+		ip saddr 127.0.0.11 tcp sport 33591 counter packets 0 bytes 0 # xt_SNAT
+		ip saddr 127.0.0.11 udp sport 53165 counter packets 0 bytes 0 # xt_SNAT
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_POSTROUTING
+	}
+}
+table inet fw {
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+		ct state established,related accept
+		ct state invalid drop
+		iifname "eth0" drop
+		oifname "eth0" drop
+		iifname "eth2" oifname "eth3" counter packets 0 bytes 0 drop
+		iifname "eth2" oifname "eth4" counter packets 13 bytes 780 accept
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-client-s-router-access-admin-tenant-admin
+--------------------------------------------------
+
+ROLE: client-s-router-access-admin-tenant-admin
+TIME: 2026-03-13T22:05:58+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if138       UP             5a:59:70:29:e6:25 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if144       UP             aa:c1:ab:f0:ef:fa <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if138       UP             172.20.20.2/24 3fff:172:20:20::2/64 fe80::5859:70ff:fe29:e625/64 
+eth1@if144       UP             10.20.15.2/24 fd42:dead:beef:15::2/64 fe80::a8c1:abff:fef0:effa/64 
+
+[ ip route ]
+default via 10.20.15.1 dev eth1 onlink 
+10.20.15.0/24 dev eth1 proto kernel scope link src 10.20.15.2 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.2 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:15::/64 dev eth1 proto kernel metric 256 pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+default via fd42:dead:beef:15::1 dev eth1 metric 1024 onlink pref medium
+
+[ ip neigh ]
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 10.20.15.1 dev eth1 src 10.20.15.2 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  10.10.0.0  0.103 ms
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  10.20.15.1  0.065 ms
+ 2  10.10.0.1  0.027 ms
+ 3  *
+ 4  *
+ 5  *
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  10.20.15.1  0.084 ms
+ 2  10.10.0.1  0.031 ms
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+ [ FIREWALL - nft list ruleset]
+table ip nat {
+	chain DOCKER_OUTPUT {
+		ip daddr 127.0.0.11 tcp dport 53 counter packets 0 bytes 0 # xt_DNAT
+		ip daddr 127.0.0.11 udp dport 53 counter packets 0 bytes 0 # xt_DNAT
+	}
+
+	chain OUTPUT {
+		type nat hook output priority -100; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_OUTPUT
+	}
+
+	chain DOCKER_POSTROUTING {
+		ip saddr 127.0.0.11 tcp sport 33003 counter packets 0 bytes 0 # xt_SNAT
+		ip saddr 127.0.0.11 udp sport 45136 counter packets 0 bytes 0 # xt_SNAT
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_POSTROUTING
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-wanp-106e2baaad9a
+--------------------------------------------------
+
+ROLE: wanp-106e2baaad9a
+TIME: 2026-03-13T22:06:01+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if151       UP             d2:43:d8:c0:5d:3b <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if168       UP             aa:c1:ab:24:2c:58 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if151       UP             172.20.20.9/24 3fff:172:20:20::9/64 fe80::d043:d8ff:fec0:5d3b/64 
+eth1@if168       UP             10.19.0.1 peer 10.19.0.0/31 fd42:dead:beef:1900::1 peer fd42:dead:beef:1900::/127 fe80::a8c1:abff:fe24:2c58/64 
+
+[ ip route ]
+default via 172.20.20.1 dev eth0 
+10.19.0.0/31 dev eth1 proto kernel scope link src 10.19.0.1 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.9 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:1900:: dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::/127 dev eth1 proto kernel metric 256 pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+default via 3fff:172:20:20::1 dev eth0 metric 1024 pref medium
+
+[ ip neigh ]
+10.19.0.0 dev eth1 lladdr aa:c1:ab:c9:7e:b8 REACHABLE 
+172.20.20.1 dev eth0 lladdr 92:69:51:14:e1:61 REACHABLE 
+fe80::fc80:f1ff:fedc:293 dev eth0 lladdr fe:80:f1:dc:02:93 STALE 
+fe80::ac40:70ff:fec5:c3bb dev eth0 lladdr ae:40:70:c5:c3:bb STALE 
+fe80::f471:e8ff:fe11:58fa dev eth0 lladdr f6:71:e8:11:58:fa STALE 
+fe80::5859:70ff:fe29:e625 dev eth0 lladdr 5a:59:70:29:e6:25 STALE 
+fe80::a8c1:abff:fec9:7eb8 dev eth1 lladdr aa:c1:ab:c9:7e:b8 STALE 
+fe80::8869:2cff:fe72:e0b5 dev eth0 lladdr 8a:69:2c:72:e0:b5 STALE 
+fe80::4071:dfff:feed:f36b dev eth0 lladdr 42:71:df:ed:f3:6b STALE 
+fe80::c487:89ff:fe04:4534 dev eth0 lladdr c6:87:89:04:45:34 STALE 
+fe80::2854:73ff:fe11:a4da dev eth0 lladdr 2a:54:73:11:a4:da STALE 
+fe80::d8e9:21ff:fedf:e311 dev eth0 lladdr da:e9:21:df:e3:11 STALE 
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 172.20.20.1 dev eth0 src 172.20.20.9 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  172.20.20.1  0.078 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  172.20.20.1  0.085 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  172.20.20.1  0.150 ms
+ 2  1.1.1.1  8.638 ms
+
+ [ FIREWALL - nft list ruleset]
+table ip nat {
+	chain postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		oifname "eth0" masquerade
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-s-router-core-wan
+--------------------------------------------------
+
+ROLE: s-router-core-wan
+TIME: 2026-03-13T22:06:05+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if139       UP             f6:71:e8:11:58:fa <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth3@if133       UP             aa:c1:ab:1f:2a:d6 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if146       UP             aa:c1:ab:3a:40:91 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth2@if149       UP             aa:c1:ab:d5:99:4a <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if139       UP             172.20.20.3/24 3fff:172:20:20::3/64 fe80::f471:e8ff:fe11:58fa/64 
+eth3@if133       UP             10.19.0.5/32 fd42:dead:beef:1900::5/128 fe80::a8c1:abff:fe1f:2ad6/64 
+eth1@if146       UP             10.10.0.8 peer 10.10.0.9/31 fd42:dead:beef:1000::8 peer fd42:dead:beef:1000::9/127 fe80::a8c1:abff:fe3a:4091/64 
+eth2@if149       UP             10.19.0.2 peer 10.19.0.3/31 fd42:dead:beef:1900::2 peer fd42:dead:beef:1900::3/127 fe80::3/128 fe80::a8c1:abff:fed5:994a/64 
+
+[ ip route ]
+default via 10.19.0.3 dev eth2 onlink 
+10.10.0.0/31 via 10.10.0.9 dev eth1 onlink 
+10.10.0.2/31 via 10.10.0.9 dev eth1 onlink 
+10.10.0.4/31 via 10.10.0.9 dev eth1 onlink 
+10.10.0.6/31 via 10.10.0.9 dev eth1 onlink 
+10.10.0.8/31 dev eth1 proto kernel scope link src 10.10.0.8 
+10.10.0.10/31 via 10.10.0.9 dev eth1 onlink 
+10.19.0.1 via 10.10.0.9 dev eth1 onlink 
+10.19.0.2 via 10.10.0.9 dev eth1 onlink 
+10.19.0.2/31 dev eth2 proto kernel scope link src 10.19.0.2 
+10.19.0.3 via 10.10.0.9 dev eth1 onlink 
+10.19.0.4 via 10.10.0.9 dev eth1 onlink 
+10.19.0.6 via 10.10.0.9 dev eth1 onlink 
+10.19.0.7 via 10.10.0.9 dev eth1 onlink 
+10.20.10.0/24 via 10.10.0.9 dev eth1 onlink 
+10.20.15.0/24 via 10.10.0.9 dev eth1 onlink 
+10.20.20.0/24 via 10.10.0.9 dev eth1 onlink 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.3 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:10::/64 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:15::/64 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:20::/64 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::/127 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::2/127 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::4/127 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::6/127 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::9 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::8/127 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::a/127 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::1 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::2 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::3 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::3 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::2/127 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::4 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::5 dev eth3 proto kernel metric 256 pref medium
+fd42:dead:beef:1900::6 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::7 via fd42:dead:beef:1000::9 dev eth1 metric 1024 onlink pref medium
+fe80::3 dev eth2 proto kernel metric 256 pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth3 proto kernel metric 256 pref medium
+fe80::/64 dev eth2 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+default via fd42:dead:beef:1900::3 dev eth2 metric 1024 onlink pref medium
+
+[ ip neigh ]
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 10.19.0.3 dev eth2 src 10.19.0.2 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  10.10.0.9  0.243 ms
+ 2  10.10.0.10  0.059 ms
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  10.10.0.9  0.079 ms
+ 2  10.10.0.10  0.030 ms
+ 3  *
+ 4  *
+ 5  *
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  10.19.0.3  0.121 ms
+ 2  172.20.20.1  0.044 ms
+ 3  1.1.1.1  8.347 ms
+
+ [ FIREWALL - nft list ruleset]
+table inet filter {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iif "lo" accept
+		ct state established,related accept
+		ct state invalid drop
+		meta l4proto ipv6-icmp accept
+		iifname "eth2" ip saddr { 0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0-255.255.255.255 } drop
+		iifname "eth2" ip6 saddr { ::1, fc00::/7, fe80::/10 } drop
+		iifname != "eth2" tcp dport 22 accept
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy accept;
+		ct state established,related accept
+		ct state invalid drop
+		iifname "eth2" ip saddr { 10.0.0.0/8, 100.64.0.0/10, 172.16.0.0/12, 192.168.0.0/16 } drop
+		iifname "eth2" ip6 saddr fc00::/7 drop
+	}
+
+	chain output {
+		type filter hook output priority filter; policy accept;
+	}
+}
+table ip nat {
+	chain postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } oifname "eth2" masquerade
+	}
+}
+table inet mangle {
+	chain forward {
+		type filter hook forward priority mangle; policy accept;
+		oifname "eth2" tcp flags syn tcp option maxseg size set rt mtu
+	}
+}
+
+==================================================
+NODE: clab-fabric-esp0xdeadbeef-site-a-s-router-access-mgmt
+--------------------------------------------------
+
+ROLE: s-router-access-mgmt
+TIME: 2026-03-13T22:06:08+00:00
+
+[ ip -br link ]
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0@if167       UP             8a:69:2c:72:e0:b5 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1@if158       UP             aa:c1:ab:0b:8f:a6 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth2@if171       UP             aa:c1:ab:06:84:c7 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+
+[ ip -br addr ]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0@if167       UP             172.20.20.13/24 3fff:172:20:20::d/64 fe80::8869:2cff:fe72:e0b5/64 
+eth1@if158       UP             10.10.0.4 peer 10.10.0.5/31 fd42:dead:beef:1000::4 peer fd42:dead:beef:1000::5/127 fe80::a8c1:abff:fe0b:8fa6/64 
+eth2@if171       UP             10.20.10.1/24 fd42:dead:beef:10::1/64 fe80::a8c1:abff:fe06:84c7/64 
+
+[ ip route ]
+default via 10.10.0.5 dev eth1 onlink 
+10.10.0.0/31 via 10.10.0.5 dev eth1 onlink 
+10.10.0.2/31 via 10.10.0.5 dev eth1 onlink 
+10.10.0.4/31 dev eth1 proto kernel scope link src 10.10.0.4 
+10.10.0.6/31 via 10.10.0.5 dev eth1 onlink 
+10.10.0.8/31 via 10.10.0.5 dev eth1 onlink 
+10.10.0.10/31 via 10.10.0.5 dev eth1 onlink 
+10.19.0.1 via 10.10.0.5 dev eth1 onlink 
+10.19.0.2 via 10.10.0.5 dev eth1 onlink 
+10.19.0.4 via 10.10.0.5 dev eth1 onlink 
+10.19.0.5 via 10.10.0.5 dev eth1 onlink 
+10.19.0.6 via 10.10.0.5 dev eth1 onlink 
+10.19.0.7 via 10.10.0.5 dev eth1 onlink 
+10.20.10.0/24 dev eth2 proto kernel scope link src 10.20.10.1 
+10.20.15.0/24 via 10.10.0.5 dev eth1 onlink 
+10.20.20.0/24 via 10.10.0.5 dev eth1 onlink 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.13 
+
+[ ip -6 route ]
+3fff:172:20:20::/64 dev eth0 proto kernel metric 256 pref medium
+fd42:dead:beef:10::/64 dev eth2 proto kernel metric 256 pref medium
+fd42:dead:beef:15::/64 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:20::/64 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::/127 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::2/127 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::5 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::4/127 dev eth1 proto kernel metric 256 pref medium
+fd42:dead:beef:1000::6/127 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::8/127 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1000::a/127 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::1 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::2 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::4 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::5 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::6 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fd42:dead:beef:1900::7 via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+fe80::/64 dev eth0 proto kernel metric 256 pref medium
+fe80::/64 dev eth1 proto kernel metric 256 pref medium
+fe80::/64 dev eth2 proto kernel metric 256 pref medium
+default via fd42:dead:beef:1000::5 dev eth1 metric 1024 onlink pref medium
+
+[ ip neigh ]
+10.20.10.2 dev eth2 lladdr aa:c1:ab:36:9c:de REACHABLE 
+10.10.0.5 dev eth1 lladdr aa:c1:ab:91:1a:28 STALE 
+
+[ ip route get 1.1.1.1 ]
+1.1.1.1 via 10.10.0.5 dev eth1 src 10.10.0.4 uid 0 
+    cache 
+
+[ traceroute -> s-router-access (10.10.0.0) ]
+traceroute to 10.10.0.0 (10.10.0.0), 8 hops max, 60 byte packets
+ 1  10.10.0.5  0.071 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+[ traceroute -> s-router-core-isp-a (10.10.0.2) ]
+traceroute to 10.10.0.2 (10.10.0.2), 5 hops max, 60 byte packets
+ 1  10.10.0.5  0.063 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+
+[ traceroute -> internet (1.1.1.1) ]
+traceroute to 1.1.1.1 (1.1.1.1), 8 hops max, 60 byte packets
+ 1  10.10.0.5  0.080 ms
+ 2  *
+ 3  *
+ 4  *
+ 5  *
+ 6  *
+ 7  *
+ 8  *
+
+ [ FIREWALL - nft list ruleset]
+table ip nat {
+	chain DOCKER_OUTPUT {
+		ip daddr 127.0.0.11 tcp dport 53 counter packets 0 bytes 0 # xt_DNAT
+		ip daddr 127.0.0.11 udp dport 53 counter packets 0 bytes 0 # xt_DNAT
+	}
+
+	chain OUTPUT {
+		type nat hook output priority -100; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_OUTPUT
+	}
+
+	chain DOCKER_POSTROUTING {
+		ip saddr 127.0.0.11 tcp sport 38177 counter packets 0 bytes 0 # xt_SNAT
+		ip saddr 127.0.0.11 udp sport 42662 counter packets 0 bytes 0 # xt_SNAT
+	}
+
+	chain POSTROUTING {
+		type nat hook postrouting priority srcnat; policy accept;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 jump DOCKER_POSTROUTING
+	}
+}
+
