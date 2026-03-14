@@ -1,6 +1,7 @@
+# ./clabgen/s88/enterprise/inject_wan_peers.py
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Dict, Any
 import hashlib
 import ipaddress
 
@@ -22,51 +23,6 @@ def _ip_only(value: Any) -> str | None:
             return str(ipaddress.ip_address(value))
         except ValueError:
             return None
-
-
-def _route_lists(iface: InterfaceModel) -> Dict[str, List[Dict[str, Any]]]:
-    routes = getattr(iface, "routes", {}) or {}
-    routes_v4 = routes.get("ipv4", [])
-    routes_v6 = routes.get("ipv6", [])
-
-    out_v4: List[Dict[str, Any]] = []
-    out_v6: List[Dict[str, Any]] = []
-
-    for route in routes_v4:
-        if isinstance(route, dict):
-            out_v4.append(dict(route))
-
-    for route in routes_v6:
-        if isinstance(route, dict):
-            out_v6.append(dict(route))
-
-    return {"v4": out_v4, "v6": out_v6}
-
-
-def _rewrite_peer_routes(
-    local_iface: InterfaceModel,
-    local_ep: Dict[str, Any],
-    peer_addr4: str | None,
-    peer_addr6: str | None,
-) -> Dict[str, List[Dict[str, Any]]]:
-    routes = _route_lists(local_iface)
-
-    local_addr4 = _ip_only(local_ep.get("addr4")) or _ip_only(getattr(local_iface, "addr4", None))
-    local_addr6 = _ip_only(local_ep.get("addr6")) or _ip_only(getattr(local_iface, "addr6", None))
-    peer_ip4 = _ip_only(peer_addr4)
-    peer_ip6 = _ip_only(peer_addr6)
-
-    for route in routes["v4"]:
-        via4 = _ip_only(route.get("via4"))
-        if via4 is not None and peer_ip4 is not None and via4 == peer_ip4 and local_addr4 is not None:
-            route["via4"] = local_addr4
-
-    for route in routes["v6"]:
-        via6 = _ip_only(route.get("via6"))
-        if via6 is not None and peer_ip6 is not None and via6 == peer_ip6 and local_addr6 is not None:
-            route["via6"] = local_addr6
-
-    return routes
 
 
 def _short_node(link_name: str, node_name: str, iface_name: str) -> str:
@@ -137,8 +93,6 @@ def inject_emulated_wan_peers(site: SiteModel) -> None:
             or getattr(local_iface, "upstream", None)
         )
 
-        routes = _rewrite_peer_routes(local_iface, local_ep, peer_addr4, peer_addr6)
-
         peer_node = NodeModel(
             name=peer_name,
             role="wan-peer",
@@ -150,10 +104,6 @@ def inject_emulated_wan_peers(site: SiteModel) -> None:
                     addr6=peer_addr6 if isinstance(peer_addr6, str) else None,
                     kind="wan",
                     upstream=upstream if isinstance(upstream, str) else None,
-                    routes={
-                        "ipv4": routes["v4"],
-                        "ipv6": routes["v6"],
-                    },
                 )
             },
         )
@@ -175,8 +125,6 @@ def inject_emulated_wan_peers(site: SiteModel) -> None:
             f" link={link_name}"
             f" local={local_node_name}:{iface_name}"
             f" peer={peer_name}:{peer_iface}"
-            f" routes4={len(routes['v4'])}"
-            f" routes6={len(routes['v6'])}"
         )
 
     site.nodes.update(new_nodes)

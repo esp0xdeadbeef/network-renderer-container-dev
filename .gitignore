@@ -24,3 +24,5 @@ clab-fabric/.tls/**/*.key
 # signing the clab generated output now:
 output-compiler-signed.json
 output-solver-signed.json
+
+vib.sh
