@@ -175,6 +175,8 @@ def inject_emulated_wan_peers(site: SiteModel) -> None:
             f" link={link_name}"
             f" local={local_node_name}:{iface_name}"
             f" peer={peer_name}:{peer_iface}"
+            f" routes4={len(routes['v4'])}"
+            f" routes6={len(routes['v6'])}"
         )
 
     site.nodes.update(new_nodes)

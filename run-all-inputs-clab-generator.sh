@@ -1,10 +1,28 @@
-# ./run-clab-generator.sh
 #!/usr/bin/env bash
 set -euo pipefail
 
-#nix flake update --flake path:.
+find ../network-compiler/examples -name inputs.nix -type f | while read -r file; do
+  echo "[*] Running for $file"
 
-find ../network-compiler/examples -name inputs.nix -type f -exec sh -c '
-  echo "[*] Running for $1"
-  nix run .#generate-clab-config "$1"
-' sh {} \;
+  if ! nix run .#generate-clab-config "$file"; then
+    echo
+    echo "[!] Generation failed for: $file"
+    echo "[!] Dumping JSON files:"
+    echo
+
+    echo "Inputs file:"
+    echo "===== $file ====="
+    cat $file
+    echo 
+    
+
+    for j in ./*.json; do
+      [ -e "$j" ] || continue
+      echo "===== $j ====="
+      cat "$j" | jq -c 
+      echo
+    done
+
+    exit 1
+  fi
+done

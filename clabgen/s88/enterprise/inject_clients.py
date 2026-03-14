@@ -27,6 +27,13 @@ def _second_usable(network: ipaddress._BaseNetwork) -> ipaddress._BaseAddress:
     return network.network_address + 2
 
 
+def _network_has_distinct_client_address(network: ipaddress._BaseNetwork) -> bool:
+    return (
+        network.prefixlen != network.max_prefixlen
+        and network.num_addresses >= 2
+    )
+
+
 def _normalize_router_iface(
     cidr: str,
 ) -> ipaddress.IPv4Interface | ipaddress.IPv6Interface:
@@ -43,6 +50,9 @@ def _derive_client_iface(cidr: str) -> tuple[str, str]:
     router_iface = _normalize_router_iface(cidr)
     network = router_iface.network
     router_ip = router_iface.ip
+
+    if not _network_has_distinct_client_address(network):
+        raise RuntimeError(f"no usable client host range for {cidr}")
 
     first = _first_usable(network)
     second = _second_usable(network)
@@ -66,6 +76,16 @@ def inject_clients(site: SiteModel) -> None:
 
             if not iface.addr4 and not iface.addr6:
                 continue
+
+            if iface.addr4:
+                network4 = ipaddress.ip_interface(iface.addr4).network
+                if not _network_has_distinct_client_address(network4):
+                    continue
+
+            if iface.addr6:
+                network6 = ipaddress.ip_interface(iface.addr6).network
+                if not _network_has_distinct_client_address(network6):
+                    continue
 
             client_name = f"client-{node_name}-{ifname}"
             if client_name in site.nodes:

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set, Tuple
 import json
+import re
+from collections import deque
 
 from clabgen.models import SiteModel, NodeModel
 
@@ -100,38 +102,315 @@ def _policy_peer_map(site: SiteModel, policy_node_name: str, eth_map: Dict[str, 
                 "eth": eth_map[iface],
                 "peer_name": peers[0],
                 "link": link.name,
+                "policy_iface": iface,
             }
         )
 
     return results
 
 
-def _access_node_tenants(node: NodeModel) -> List[str]:
+def _is_loopback_tenant_iface(iface: Any) -> bool:
+    tenant = getattr(iface, "tenant", None)
+    upstream = getattr(iface, "upstream", None)
+    name = getattr(iface, "name", None)
+
+    if tenant == "loopback":
+        return True
+    if isinstance(name, str) and name == "tenant-loopback":
+        return True
+    if isinstance(upstream, str) and upstream == "tenant-loopback":
+        return True
+
+    return False
+
+
+def _ownership_tenant_names(site: SiteModel) -> List[str]:
+    result: set[str] = set()
+
+    prefixes = (site.raw_ownership or {}).get("prefixes", [])
+    if not isinstance(prefixes, list):
+        return []
+
+    for prefix in prefixes:
+        if not isinstance(prefix, dict):
+            continue
+        if prefix.get("kind") != "tenant":
+            continue
+
+        name = prefix.get("name")
+        if isinstance(name, str) and name:
+            result.add(name)
+
+    return sorted(result)
+
+
+def _node_name_candidate_tenants(node_name: str, candidates: List[str]) -> List[str]:
+    tokens = [t for t in re.split(r"[^a-zA-Z0-9]+", node_name) if t]
+    token_set = {t.lower() for t in tokens}
+
+    matches: List[str] = []
+    for candidate in candidates:
+        if candidate.lower() in token_set:
+            matches.append(candidate)
+
+    return sorted(set(matches))
+
+
+def _access_node_tenants(site: SiteModel, node: NodeModel) -> List[str]:
     tenants: set[str] = set()
 
     for iface in node.interfaces.values():
         if getattr(iface, "kind", None) != "tenant":
             continue
+        if _is_loopback_tenant_iface(iface):
+            continue
+
         tenant = getattr(iface, "tenant", None)
         if isinstance(tenant, str) and tenant:
             tenants.add(tenant)
 
-    if not tenants:
-        debug = {
-            "node": node.name,
-            "role": node.role,
-            "interfaces": {
-                name: getattr(iface, "__dict__", str(iface))
-                for name, iface in node.interfaces.items()
-            },
-        }
+    if tenants:
+        return sorted(tenants)
 
+    candidate_tenants = sorted(
+        set(_contract_tenant_names(dict(site.raw_policy or {})))
+        | set(_ownership_tenant_names(site))
+    )
+
+    name_matches = _node_name_candidate_tenants(node.name, candidate_tenants)
+    if len(name_matches) == 1:
+        return name_matches
+
+    if len(candidate_tenants) == 1:
+        return candidate_tenants
+
+    debug = {
+        "node": node.name,
+        "role": node.role,
+        "candidate_tenants": candidate_tenants,
+        "interfaces": {
+            name: getattr(iface, "__dict__", str(iface))
+            for name, iface in node.interfaces.items()
+        },
+    }
+
+    raise RuntimeError(
+        "tenant cannot be resolved for access node\n"
+        + json.dumps(debug, indent=2, default=str)
+    )
+
+
+def _domains_external_names(site: SiteModel) -> Set[str]:
+    domains = dict(site.raw_domains or site.domains or {})
+    externals = domains.get("externals", [])
+
+    if isinstance(externals, dict):
+        result = {
+            name for name, value in externals.items()
+            if isinstance(name, str) and name and value is not None
+        }
+        return result
+
+    if not isinstance(externals, list):
+        return set()
+
+    result: Set[str] = set()
+    for item in externals:
+        if isinstance(item, str) and item:
+            result.add(item)
+            continue
+        if isinstance(item, dict):
+            name = item.get("name")
+            if isinstance(name, str) and name:
+                result.add(name)
+
+    return result
+
+
+def _transport_overlay_specs(site: SiteModel) -> Dict[str, Dict[str, Any]]:
+    transport = dict(site.raw_transport or {})
+    overlays = transport.get("overlays", [])
+
+    if isinstance(overlays, dict):
+        result: Dict[str, Dict[str, Any]] = {}
+        for overlay_name, overlay_obj in overlays.items():
+            if not isinstance(overlay_name, str) or not overlay_name:
+                continue
+            if not isinstance(overlay_obj, dict):
+                continue
+            normalized = dict(overlay_obj)
+            normalized.setdefault("name", overlay_name)
+            result[overlay_name] = normalized
+        return result
+
+    if not isinstance(overlays, list):
+        return {}
+
+    result: Dict[str, Dict[str, Any]] = {}
+    for overlay in overlays:
+        if not isinstance(overlay, dict):
+            continue
+        name = overlay.get("name")
+        if not isinstance(name, str) or not name:
+            continue
+        result[name] = dict(overlay)
+
+    return result
+
+
+def _string_list(value: Any) -> List[str]:
+    if isinstance(value, str) and value:
+        return [value]
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str) and item]
+
+
+def _overlay_terminates_on_required_interface(
+    site: SiteModel,
+    *,
+    overlay_name: str,
+    terminate_on: str,
+) -> bool:
+    node = site.nodes.get(terminate_on)
+    if node is None:
         raise RuntimeError(
-            "tenant cannot be resolved for access node\n"
-            + json.dumps(debug, indent=2, default=str)
+            f"overlay {overlay_name!r} terminateOn node {terminate_on!r} not found"
         )
 
-    return sorted(tenants)
+    for iface in node.interfaces.values():
+        if getattr(iface, "kind", None) != "overlay":
+            continue
+        if getattr(iface, "overlay", None) == overlay_name:
+            return True
+
+    return False
+
+
+def _adjacency(site: SiteModel) -> Dict[str, Set[str]]:
+    graph: Dict[str, Set[str]] = {name: set() for name in site.nodes.keys()}
+
+    for link in site.links.values():
+        names = [name for name in link.endpoints.keys() if name in site.nodes]
+        for src in names:
+            graph.setdefault(src, set())
+            for dst in names:
+                if dst != src:
+                    graph[src].add(dst)
+
+    return graph
+
+
+def _first_hop_from_policy(
+    site: SiteModel,
+    *,
+    policy_node_name: str,
+    target_node_name: str,
+) -> str | None:
+    if policy_node_name == target_node_name:
+        return None
+
+    graph = _adjacency(site)
+    if policy_node_name not in graph or target_node_name not in graph:
+        return None
+
+    queue: deque[str] = deque([policy_node_name])
+    parents: Dict[str, str | None] = {policy_node_name: None}
+
+    while queue:
+        current = queue.popleft()
+        if current == target_node_name:
+            break
+
+        for neighbor in sorted(graph.get(current, set())):
+            if neighbor in parents:
+                continue
+            parents[neighbor] = current
+            queue.append(neighbor)
+
+    if target_node_name not in parents:
+        return None
+
+    current = target_node_name
+    prev = parents[current]
+
+    while prev is not None and prev != policy_node_name:
+        current = prev
+        prev = parents[current]
+
+    if prev != policy_node_name:
+        return None
+
+    return current
+
+
+def _policy_iface_for_peer(
+    peer_map: List[Dict[str, Any]],
+    peer_name: str,
+) -> Tuple[str, str] | None:
+    for peer in peer_map:
+        if peer.get("peer_name") != peer_name:
+            continue
+        eth = peer.get("eth")
+        if not isinstance(eth, int):
+            continue
+        return (f"eth{eth}", str(peer.get("policy_iface") or ""))
+    return None
+
+
+def _resolve_external_via_overlay(
+    site: SiteModel,
+    *,
+    policy_node_name: str,
+    peer_map: List[Dict[str, Any]],
+    external: str,
+) -> str | None:
+    overlay_specs = _transport_overlay_specs(site)
+    overlay = overlay_specs.get(external)
+    if overlay is None:
+        return None
+
+    terminate_on = overlay.get("terminateOn")
+    if not isinstance(terminate_on, str) or not terminate_on:
+        raise RuntimeError(
+            f"overlay {external!r} missing terminateOn\n"
+            + json.dumps(overlay, indent=2, default=str)
+        )
+
+    must_traverse = set(_string_list(overlay.get("mustTraverse")))
+    if "policy" not in must_traverse:
+        raise RuntimeError(
+            f"overlay {external!r} does not require policy traversal\n"
+            + json.dumps(overlay, indent=2, default=str)
+        )
+
+    if not _overlay_terminates_on_required_interface(
+        site,
+        overlay_name=external,
+        terminate_on=terminate_on,
+    ):
+        raise RuntimeError(
+            f"overlay {external!r} has no overlay interface on terminateOn node {terminate_on!r}"
+        )
+
+    first_hop = _first_hop_from_policy(
+        site,
+        policy_node_name=policy_node_name,
+        target_node_name=terminate_on,
+    )
+    if first_hop is None:
+        raise RuntimeError(
+            f"no topology path from policy node {policy_node_name!r} to overlay terminateOn node {terminate_on!r}"
+        )
+
+    resolved = _policy_iface_for_peer(peer_map, first_hop)
+    if resolved is None:
+        raise RuntimeError(
+            f"no policy-facing interface found for first hop {first_hop!r} toward overlay {external!r}"
+        )
+
+    eth_ifname, _ = resolved
+    return eth_ifname
 
 
 def _build_policy_interface_tags(
@@ -156,7 +435,7 @@ def _build_policy_interface_tags(
         iface_name = f"eth{peer['eth']}"
 
         if peer_node.role == "access":
-            tenants = _access_node_tenants(peer_node)
+            tenants = _access_node_tenants(site, peer_node)
             if len(tenants) != 1:
                 raise RuntimeError(
                     "policy-facing access node must resolve to exactly one tenant\n"
@@ -201,6 +480,31 @@ def _build_policy_interface_tags(
         only_if = next(iter(interface_tags.keys()))
         interface_tags[only_if] = "wan"
         available_tags = {"wan"}
+
+    declared_externals = _domains_external_names(site)
+
+    for external in sorted(required_externals):
+        if external in available_tags:
+            continue
+
+        if external not in declared_externals:
+            raise RuntimeError(
+                f"external {external!r} referenced by communicationContract is not declared in site.domains.externals"
+            )
+
+        resolved_iface = _resolve_external_via_overlay(
+            site,
+            policy_node_name=policy_node_name,
+            peer_map=peer_map,
+            external=external,
+        )
+        if resolved_iface is None:
+            raise RuntimeError(
+                f"external {external!r} has no policy-local tag and no overlay realization"
+            )
+
+        interface_tags[resolved_iface] = external
+        available_tags = set(interface_tags.values())
 
     for tenant in required_tenants:
         if tenant not in available_tags:

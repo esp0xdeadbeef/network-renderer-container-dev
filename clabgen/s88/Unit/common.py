@@ -24,6 +24,7 @@ def build_node_data(
                 "ll6": iface.ll6,
                 "kind": iface.kind,
                 "tenant": iface.tenant,
+                "overlay": iface.overlay,
                 "upstream": iface.upstream,
                 "routes": copy.deepcopy(iface.routes),
             }

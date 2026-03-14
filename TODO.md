@@ -1,20 +1,75 @@
-# TODO — Decouple Firewall Policy from Interfaces
+TODO — Renderer: derive policy externals from solved overlay realization
 
-## Problem
-Firewall rules are currently generated **using interface names**.  
-Policy in the model is defined using **tenants and services**, not interfaces.
+Problem
+The renderer currently assumes that every external referenced by
+communicationContract must correspond to a local interface tag on the
+policy node.
 
-This couples security policy to topology details and makes it fragile.
+This assumption is incorrect.
 
-## Required Change
-Write firewall policy using **tenant → tenant relations**, not interfaces.
+In the solved operational model an external domain may be realized through
+a transport overlay that terminates on another Unit while still requiring
+policy traversal.
 
-Interfaces must then be **tagged with the tenant they belong to**, and that tenant policy is applied to them.
+The renderer must therefore resolve externals from the solved fabric
+model rather than only from policy-node interfaces.
 
-In short:
+Required behavior
 
-1. Define policy using tenants.
-2. Map interfaces to tenants using solver data.
-3. Apply the tenant policy to those interfaces.
+When an external appears in:
 
-Policy must **never be derived from interface names**.
+    site.communicationContract.allowedRelations[].to
+
+and the external is listed in:
+
+    site.domains.externals[]
+
+the renderer must determine how that external is realized in the solved
+network.
+
+Resolution algorithm
+
+1. Look for a local policy-node interface tagged with that external.
+   If present, use it.
+
+2. Otherwise resolve the external via overlay realization:
+
+   - inspect site.transport.overlays[]
+   - find overlay where overlay.name == external.name
+   - determine termination node from overlay.terminateOn
+
+3. Verify that policy traversal is required:
+
+       "policy" ∈ overlay.mustTraverse
+
+4. Locate the overlay interface on the termination node:
+
+       site.nodes[overlay.terminateOn].interfaces.*
+           where kind == "overlay"
+           and overlay == external.name
+
+5. Treat that overlay interface as the operational realization of the
+   external domain.
+
+Failure condition
+
+Only fail if:
+
+    external ∈ communicationContract
+    AND
+    external ∉ site.domains.externals
+    OR
+    no overlay realization exists
+    OR
+    traversal does not include policy
+
+Rationale
+
+The solver already provides a complete operational model including:
+
+    domains.externals
+    transport.overlays
+    overlay interfaces on nodes
+
+The renderer must use this information to resolve policy externals instead
+of requiring them to be locally attached to the policy node.

@@ -139,24 +139,10 @@ def render_units(site: SiteModel) -> Tuple[Dict[str, Any], List[Dict[str, Any]],
             endpoint = f"{node_name}:eth{eth_index}"
             endpoints.append(endpoint)
 
-            print(
-                "[render_units] endpoint collected:"
-                f" site={site.enterprise}/{site.site}"
-                f" link={link_name}"
-                f" endpoint={endpoint}"
-            )
 
         if len(endpoints) == 2:
             bridge = _bridge_name(f"{site.enterprise}-{site.site}-{link_name}")
             bridges.append(bridge)
-
-            print(
-                "[render_units] link endpoints created:"
-                f" site={site.enterprise}/{site.site}"
-                f" link={link_name}"
-                f" bridge={bridge}"
-                f" endpoints={endpoints}"
-            )
 
             links.append(
                 {
@@ -184,13 +170,6 @@ def render_units(site: SiteModel) -> Tuple[Dict[str, Any], List[Dict[str, Any]],
             endpoint = f"{node_name}:eth{eth}"
             tenant_groups.setdefault(tenant_key, []).append(endpoint)
 
-            print(
-                "[render_units] tenant endpoint collected:"
-                f" site={site.enterprise}/{site.site}"
-                f" tenant={tenant_key}"
-                f" endpoint={endpoint}"
-            )
-
     for tenant in sorted(tenant_groups.keys()):
         bridge = _bridge_name(f"{site.enterprise}-{site.site}-tenant-{tenant}")
         bridges.append(bridge)
@@ -199,21 +178,6 @@ def render_units(site: SiteModel) -> Tuple[Dict[str, Any], List[Dict[str, Any]],
         if len(endpoints) == 1:
             host_endpoint = f"host:{_host_ifname(bridge)}"
             endpoints.append(host_endpoint)
-
-            print(
-                "[render_units] tenant host endpoint created:"
-                f" site={site.enterprise}/{site.site}"
-                f" tenant={tenant}"
-                f" endpoint={host_endpoint}"
-            )
-
-        print(
-            "[render_units] tenant link endpoints created:"
-            f" site={site.enterprise}/{site.site}"
-            f" tenant={tenant}"
-            f" bridge={bridge}"
-            f" endpoints={endpoints}"
-        )
 
         links.append(
             {

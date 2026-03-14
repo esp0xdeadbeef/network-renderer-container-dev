@@ -1,3 +1,4 @@
+# ./clabgen/s88/enterprise/site_loader.py
 from __future__ import annotations
 
 from typing import Dict, List, Any
@@ -14,23 +15,48 @@ from clabgen.solver import (
 from clabgen.models import SiteModel, NodeModel, InterfaceModel, LinkModel
 
 
+def _dict_list(value: Any, field_name: str) -> List[Dict[str, Any]]:
+    if value is None:
+        return []
+
+    if not isinstance(value, list):
+        raise ValueError(f"{field_name} must be an array")
+
+    result: List[Dict[str, Any]] = []
+
+    for item in value:
+        if not isinstance(item, dict):
+            raise ValueError(f"{field_name} entries must be objects")
+
+        if "dst" not in item:
+            raise ValueError(f"{field_name} route missing 'dst'")
+
+        dst = item["dst"]
+        if not isinstance(dst, str) or not dst:
+            raise ValueError(f"{field_name} route 'dst' must be a non-empty string")
+
+        result.append(dict(item))
+
+    return result
+
+
 def _route_lists(iface: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
-    routes = iface.get("routes")
-    if not isinstance(routes, dict):
+    routes_obj = iface.get("routes")
+    if routes_obj is None:
+        routes_obj = {}
+
+    if not isinstance(routes_obj, dict):
         raise ValueError("interface.routes must be an object")
 
-    ipv4 = routes.get("ipv4", [])
-    ipv6 = routes.get("ipv6", [])
+    ipv4 = _dict_list(routes_obj.get("ipv4", []), "interface.routes.ipv4")
+    ipv6 = _dict_list(routes_obj.get("ipv6", []), "interface.routes.ipv6")
 
-    if not isinstance(ipv4, list):
-        raise ValueError("interface.routes.ipv4 must be an array")
-
-    if not isinstance(ipv6, list):
-        raise ValueError("interface.routes.ipv6 must be an array")
+    uplink4 = _dict_list(iface.get("uplinkRoutes4", []), "interface.uplinkRoutes4")
+    uplink6 = _dict_list(iface.get("uplinkRoutes6", []), "interface.uplinkRoutes6")
 
     return {
-        "ipv4": list(ipv4),
-        "ipv6": list(ipv6),
+        "ipv4": ipv4 + uplink4,
+        "ipv6": ipv6 + uplink6,
     }
 
 
@@ -52,6 +78,7 @@ def _endpoint_fallbacks(
         "addr6": iface.get("addr6") or ep.get("addr6"),
         "ll6": iface.get("ll6") or ep.get("ll6"),
         "kind": iface.get("kind") or link.get("kind"),
+        "overlay": iface.get("overlay") or ep.get("overlay") or link.get("overlay"),
         "upstream": (
             iface.get("upstream")
             or iface.get("uplink")
@@ -60,12 +87,14 @@ def _endpoint_fallbacks(
             or link.get("upstream")
             or link.get("uplink")
         ),
+        "tenant": iface.get("tenant") or ep.get("tenant") or link.get("tenant"),
     }
 
 
 def _network_of(addr: Any) -> str | None:
     if not isinstance(addr, str) or not addr:
         return None
+
     try:
         return str(ipaddress.ip_interface(addr).network)
     except ValueError:
@@ -90,6 +119,7 @@ def _infer_interface_tenant(
         network = _network_of(addr)
         if network is None:
             continue
+
         tenant = tenant_prefix_owners.get(network)
         if isinstance(tenant, str) and tenant:
             return tenant
@@ -109,6 +139,7 @@ def _build_interfaces(
 
     for link_key, iface in node_obj.get("interfaces", {}).items():
         fb = _endpoint_fallbacks(site, node_name, link_key, iface)
+
         tenant = _infer_interface_tenant(
             iface_name=link_key,
             fb=fb,
@@ -124,23 +155,16 @@ def _build_interfaces(
             kind=fb["kind"],
             upstream=fb["upstream"],
             tenant=tenant,
-        )
-
-        print(
-            "[site_loader] interface:"
-            f" node={node_name}"
-            f" ifname={link_key}"
-            f" kind={fb['kind']}"
-            f" tenant={tenant}"
-            f" upstream={fb['upstream']}"
-            f" addr4={fb['addr4']}"
-            f" addr6={fb['addr6']}"
+            overlay=fb["overlay"] if isinstance(fb["overlay"], str) else None,
         )
 
     return interfaces
 
 
-def _build_nodes(site: Dict[str, Any], tenant_prefix_owners: Dict[str, str]) -> Dict[str, NodeModel]:
+def _build_nodes(
+    site: Dict[str, Any],
+    tenant_prefix_owners: Dict[str, str],
+) -> Dict[str, NodeModel]:
     nodes: Dict[str, NodeModel] = {}
 
     for unit, node_obj in site.get("nodes", {}).items():
@@ -168,230 +192,7 @@ def _build_links(site: Dict[str, Any]) -> Dict[str, LinkModel]:
             endpoints=lo.get("endpoints", {}),
         )
 
-        print(
-            "[site_loader] link:"
-            f" name={lk}"
-            f" kind={lo.get('kind', 'lan')}"
-            f" uplink={lo.get('uplink') or lo.get('upstream')}"
-            f" endpoints={sorted((lo.get('endpoints') or {}).keys())}"
-        )
-
     return links
-
-
-def _ownership_endpoint_tenants(ownership: Dict[str, Any]) -> Dict[str, str]:
-    result: Dict[str, str] = {}
-
-    endpoints = ownership.get("endpoints", [])
-    if endpoints is None:
-        return result
-    if not isinstance(endpoints, list):
-        raise ValueError("ownership.endpoints must be an array")
-
-    for endpoint in endpoints:
-        if not isinstance(endpoint, dict):
-            continue
-
-        name = endpoint.get("name")
-        tenant = endpoint.get("tenant")
-
-        if not isinstance(name, str) or not name:
-            raise ValueError("ownership.endpoints[].name must be a non-empty string")
-        if not isinstance(tenant, str) or not tenant:
-            raise ValueError(
-                f"ownership.endpoints[{name!r}].tenant must be a non-empty string"
-            )
-
-        result[name] = tenant
-
-    return result
-
-
-def _normalize_renderer_inventory(renderer_inventory: Dict[str, Any]) -> Dict[str, Any]:
-    if not isinstance(renderer_inventory, dict):
-        raise ValueError("renderer inventory must be an object")
-
-    hosts = renderer_inventory.get("hosts", {})
-    if not isinstance(hosts, dict):
-        raise ValueError("renderer inventory 'hosts' must be an object")
-
-    normalized_hosts: Dict[str, Dict[str, Any]] = {}
-
-    for host_name, host in hosts.items():
-        if not isinstance(host_name, str) or not host_name:
-            raise ValueError("renderer inventory host names must be non-empty strings")
-        if not isinstance(host, dict):
-            raise ValueError(f"renderer inventory host {host_name!r} must be an object")
-
-        attach_node = host.get("attach_node")
-        attach_network = host.get("attach_network")
-
-        if not isinstance(attach_node, str) or not attach_node:
-            raise ValueError(
-                f"renderer inventory host {host_name!r}.attach_node must be a non-empty string"
-            )
-        if not isinstance(attach_network, str) or not attach_network:
-            raise ValueError(
-                f"renderer inventory host {host_name!r}.attach_network must be a non-empty string"
-            )
-
-        normalized_hosts[host_name] = dict(host)
-
-    return {"hosts": normalized_hosts}
-
-
-def _service_provider_names(raw_policy: Dict[str, Any]) -> List[str]:
-    result: List[str] = []
-
-    services = raw_policy.get("services", [])
-    if not isinstance(services, list):
-        return result
-
-    for service in services:
-        if not isinstance(service, dict):
-            continue
-
-        providers = service.get("providers", [])
-        if not isinstance(providers, list):
-            continue
-
-        for provider in providers:
-            if isinstance(provider, str) and provider:
-                result.append(provider)
-
-    return sorted(set(result))
-
-
-def _validate_renderer_inventory_for_site(
-    *,
-    enterprise: str,
-    site_name: str,
-    site: Dict[str, Any],
-    renderer_inventory: Dict[str, Any],
-) -> Dict[str, Any]:
-    normalized_inventory = _normalize_renderer_inventory(renderer_inventory)
-    hosts = normalized_inventory["hosts"]
-    site_nodes = site.get("nodes", {})
-    if not isinstance(site_nodes, dict):
-        raise ValueError(
-            f"enterprise.{enterprise}.site.{site_name}.nodes must be an object"
-        )
-
-    raw_policy = dict(site.get("communicationContract", {}) or {})
-    ownership = dict(site.get("ownership", {}) or {})
-    endpoint_tenants = _ownership_endpoint_tenants(ownership)
-
-    required_hosts = set(endpoint_tenants.keys())
-    required_hosts.update(_service_provider_names(raw_policy))
-
-    for host_name in sorted(required_hosts):
-        host = hosts.get(host_name)
-        if not isinstance(host, dict):
-            raise ValueError(
-                f"renderer inventory missing host placement for endpoint/provider "
-                f"{host_name!r} in {enterprise}/{site_name}"
-            )
-
-        attach_node = host.get("attach_node")
-        attach_network = host.get("attach_network")
-
-        if attach_node not in site_nodes:
-            raise ValueError(
-                f"renderer inventory host {host_name!r} references missing "
-                f"attach_node {attach_node!r} in {enterprise}/{site_name}"
-            )
-
-        if not isinstance(attach_network, str) or not attach_network:
-            raise ValueError(
-                f"renderer inventory host {host_name!r} has invalid "
-                f"attach_network in {enterprise}/{site_name}"
-            )
-
-        ownership_tenant = endpoint_tenants.get(host_name)
-        if ownership_tenant is not None and attach_network != ownership_tenant:
-            raise ValueError(
-                f"renderer inventory tenant mismatch for endpoint {host_name!r} "
-                f"in {enterprise}/{site_name}: attach_network={attach_network!r} "
-                f"ownership.tenant={ownership_tenant!r}"
-            )
-
-    return normalized_inventory
-
-
-def _provider_zone_map(
-    *,
-    enterprise: str,
-    site_name: str,
-    raw_policy: Dict[str, Any],
-    raw_ownership: Dict[str, Any],
-    renderer_inventory: Dict[str, Any],
-) -> Dict[str, str]:
-    services = raw_policy.get("services", [])
-    if not isinstance(services, list):
-        raise ValueError(
-            f"communicationContract.services must be an array in {enterprise}/{site_name}"
-        )
-
-    endpoint_tenants = _ownership_endpoint_tenants(raw_ownership)
-    hosts = dict(renderer_inventory.get("hosts", {}) or {})
-    result: Dict[str, str] = {}
-
-    for service in services:
-        if not isinstance(service, dict):
-            continue
-
-        service_name = service.get("name")
-        providers = service.get("providers", [])
-
-        if not isinstance(service_name, str) or not service_name:
-            continue
-
-        if not isinstance(providers, list):
-            raise ValueError(
-                f"service {service_name!r}.providers must be an array in {enterprise}/{site_name}"
-            )
-
-        resolved_zone: str | None = None
-
-        for provider in providers:
-            if not isinstance(provider, str) or not provider:
-                continue
-
-            host = hosts.get(provider)
-            if not isinstance(host, dict):
-                raise ValueError(
-                    f"service provider {provider!r} for service {service_name!r} "
-                    f"has no renderer placement in {enterprise}/{site_name}"
-                )
-
-            attach_network = host.get("attach_network")
-            if not isinstance(attach_network, str) or not attach_network:
-                raise ValueError(
-                    f"service provider {provider!r} for service {service_name!r} "
-                    f"has invalid attach_network"
-                )
-
-            tenant = endpoint_tenants.get(provider)
-            if isinstance(tenant, str) and tenant and attach_network != tenant:
-                raise ValueError(
-                    f"service provider {provider!r} for service {service_name!r} "
-                    f"has tenant mismatch in {enterprise}/{site_name}: "
-                    f"attach_network={attach_network!r} tenant={tenant!r}"
-                )
-
-            resolved_zone = attach_network
-            break
-
-        if providers and resolved_zone is None:
-            raise ValueError(
-                f"service {service_name!r} has providers but none could be resolved "
-                f"through renderer inventory in {enterprise}/{site_name}"
-            )
-
-        if resolved_zone is not None:
-            result[service_name] = resolved_zone
-
-    return result
 
 
 def _tenant_prefix_owners(site: Dict[str, Any]) -> Dict[str, str]:
@@ -427,6 +228,7 @@ def load_sites(
     path: str | Path,
     renderer_inventory: Dict[str, Any] | None = None,
 ) -> Dict[str, SiteModel]:
+
     solver_path = Path(path)
     data = load_solver(solver_path)
 
@@ -435,7 +237,6 @@ def load_sites(
     renderer_inventory = dict(renderer_inventory or {})
 
     for enterprise, site_name, site in extract_enterprise_sites(data):
-        print(f"[site_loader] site={enterprise}/{site_name}")
 
         validate_site_invariants(
             site,
@@ -447,21 +248,11 @@ def load_sites(
 
         nodes = _build_nodes(site, tenant_prefix_owners)
         links = _build_links(site)
+
         raw_policy = dict(site.get("communicationContract", {}) or {})
         raw_ownership = dict(site.get("ownership", {}) or {})
-        validated_inventory = _validate_renderer_inventory_for_site(
-            enterprise=enterprise,
-            site_name=site_name,
-            site=site,
-            renderer_inventory=renderer_inventory,
-        )
-        provider_zone_map = _provider_zone_map(
-            enterprise=enterprise,
-            site_name=site_name,
-            raw_policy=raw_policy,
-            raw_ownership=raw_ownership,
-            renderer_inventory=validated_inventory,
-        )
+        raw_domains = dict(site.get("domains", {}) or {})
+        raw_transport = dict(site.get("transport", {}) or {})
 
         key = f"{enterprise}-{site_name}"
 
@@ -471,13 +262,15 @@ def load_sites(
             nodes=nodes,
             links=links,
             single_access=assumptions.get("singleAccess", ""),
-            domains={},
+            domains=raw_domains,
             raw_policy=raw_policy,
             raw_nat={},
             raw_links=dict(site.get("links", {}) or {}),
             raw_ownership=raw_ownership,
-            renderer_inventory=validated_inventory,
-            provider_zone_map=provider_zone_map,
+            raw_domains=raw_domains,
+            raw_transport=raw_transport,
+            renderer_inventory=renderer_inventory,
+            provider_zone_map={},
             solver_meta=solver_meta,
             policy_node_name=str(site.get("policyNodeName", "") or ""),
             upstream_selector_node_name=str(site.get("upstreamSelectorNodeName", "") or ""),

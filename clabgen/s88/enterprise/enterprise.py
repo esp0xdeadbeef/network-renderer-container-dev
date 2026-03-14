@@ -147,12 +147,6 @@ class Enterprise:
                     topo["topology"]["nodes"][node_name]
                 )
 
-                print(
-                    "[enterprise.render] node-map:"
-                    f" site={site.enterprise}/{site.site}"
-                    f" source={node_name}"
-                    f" rendered={rendered_node_name}"
-                )
 
             for link_def in topo["topology"]["links"]:
                 link_copy = copy.deepcopy(link_def)
@@ -180,12 +174,6 @@ class Enterprise:
 
                 link_copy["endpoints"] = rewritten_endpoints
 
-                print(
-                    "[enterprise.render] rewritten-link:"
-                    f" site={site.enterprise}/{site.site}"
-                    f" endpoints={rewritten_endpoints}"
-                    f" labels={link_copy.get('labels', {})}"
-                )
 
                 merged_links.append(link_copy)
 

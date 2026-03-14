@@ -31,6 +31,7 @@ class InterfaceModel:
     kind: Optional[str] = None
     upstream: Optional[str] = None
     tenant: Optional[str] = None
+    overlay: Optional[str] = None
 
 
 @dataclass
@@ -67,6 +68,8 @@ class SiteModel:
     raw_nat: Dict[str, Any] = field(default_factory=dict)
     raw_links: Dict[str, Any] = field(default_factory=dict)
     raw_ownership: Dict[str, Any] = field(default_factory=dict)
+    raw_domains: Dict[str, Any] = field(default_factory=dict)
+    raw_transport: Dict[str, Any] = field(default_factory=dict)
     renderer_inventory: Dict[str, Any] = field(default_factory=dict)
     provider_zone_map: Dict[str, str] = field(default_factory=dict)
     solver_meta: Dict[str, Any] = field(default_factory=dict)

@@ -1,4 +1,3 @@
-# ./clabgen/s88/EM/default.py
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -84,6 +83,8 @@ def _p2p_peer(addr: str) -> str | None:
 
 def _route_lists(iface: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
     routes = iface.get("routes")
+    if routes is None:
+        routes = {}
     if not isinstance(routes, dict):
         raise ValueError("interface.routes must be an object")
 
@@ -97,8 +98,8 @@ def _route_lists(iface: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
         raise ValueError("interface.routes.ipv6 must be an array")
 
     return {
-        "ipv4": list(ipv4),
-        "ipv6": list(ipv6),
+        "ipv4": [dict(r) for r in ipv4 if isinstance(r, dict)],
+        "ipv6": [dict(r) for r in ipv6 if isinstance(r, dict)],
     }
 
 
@@ -119,6 +120,21 @@ def _normalize_prefix(dst: str) -> str:
         return str(ipaddress.ip_network(dst, strict=False))
     except Exception:
         return dst
+
+
+def _normalize_host_route(dst: str) -> str:
+    try:
+        net = ipaddress.ip_network(dst, strict=False)
+    except Exception:
+        return dst
+
+    if isinstance(net, ipaddress.IPv4Network) and net.prefixlen == 32:
+        return str(net.network_address)
+
+    if isinstance(net, ipaddress.IPv6Network) and net.prefixlen == 128:
+        return str(net.network_address)
+
+    return str(net)
 
 
 def _addr_ip(addr: str | None) -> str | None:
@@ -245,6 +261,36 @@ def _same_subnet(gateway: str | None, iface_addr: str | None) -> bool:
         return False
 
 
+def _route_family(route: Dict[str, Any]) -> int | None:
+    dst = _dst(route)
+
+    if isinstance(dst, str) and dst:
+        try:
+            return ipaddress.ip_network(dst, strict=False).version
+        except Exception:
+            pass
+
+    via4 = _via4(route)
+    via6 = _via6(route)
+
+    if isinstance(via4, str) and via4:
+        return 4
+    if isinstance(via6, str) and via6:
+        return 6
+
+    return None
+
+
+def _route_via_is_local(route: Dict[str, Any], family: int, local4: set[str], local6: set[str]) -> bool:
+    if family == 4:
+        via = _via4(route)
+        return isinstance(via, str) and via in local4
+    if family == 6:
+        via = _via6(route)
+        return isinstance(via, str) and via in local6
+    return False
+
+
 def _effective_via4(node: Dict[str, Any], iface: Dict[str, Any], route: Dict[str, Any]) -> str | None:
     via = _via4(route)
     local4, _ = _local_ips(node)
@@ -358,6 +404,7 @@ def _render_static_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> List
     cmds: List[str] = []
     seen: set[str] = set()
     connected4, connected6 = _connected_prefixes(node)
+    local4, local6 = _local_ips(node)
 
     for ifname in sorted((node.get("interfaces", {}) or {}).keys()):
         iface = node["interfaces"][ifname]
@@ -370,12 +417,16 @@ def _render_static_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> List
         for r in routes["ipv4"]:
             dst = _dst(r)
             via = _effective_via4(node, iface, r)
+
             if not dst or not via or dst == "0.0.0.0/0":
                 continue
+
             dst = _normalize_prefix(dst)
             if r.get("proto") == "connected":
                 continue
             if dst in connected4:
+                continue
+            if _route_via_is_local(r, 4, local4, local6):
                 continue
 
             cmd = f"ip route replace {dst} via {via} dev eth{eth} onlink"
@@ -386,12 +437,16 @@ def _render_static_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> List
         for r in routes["ipv6"]:
             dst = _dst(r)
             via = _effective_via6(node, iface, r)
+
             if not dst or not via or dst == "::/0":
                 continue
+
             dst = _normalize_prefix(dst)
             if r.get("proto") == "connected":
                 continue
             if dst in connected6:
+                continue
+            if _route_via_is_local(r, 6, local4, local6):
                 continue
 
             cmd = f"ip -6 route replace {dst} via {via} dev eth{eth} onlink"
@@ -405,6 +460,7 @@ def _render_static_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> List
 def _render_default_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> List[str]:
     cmds: List[str] = []
     seen: set[str] = set()
+    local4, local6 = _local_ips(node)
 
     for ifname in sorted((node.get("interfaces", {}) or {}).keys()):
         iface = node["interfaces"][ifname]
@@ -417,6 +473,9 @@ def _render_default_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> Lis
         for r in routes["ipv4"]:
             if _dst(r) != "0.0.0.0/0":
                 continue
+            if _route_via_is_local(r, 4, local4, local6):
+                continue
+
             via = _effective_via4(node, iface, r)
             if via:
                 cmd = f"ip route replace default via {via} dev eth{eth} onlink"
@@ -427,6 +486,9 @@ def _render_default_routes(node: Dict[str, Any], eth_map: Dict[str, int]) -> Lis
         for r in routes["ipv6"]:
             if _dst(r) != "::/0":
                 continue
+            if _route_via_is_local(r, 6, local4, local6):
+                continue
+
             via = _effective_via6(node, iface, r)
             if via:
                 cmd = f"ip -6 route replace default via {via} dev eth{eth} onlink"
